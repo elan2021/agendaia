@@ -1,0 +1,63 @@
+'use client';
+
+import React, { useState } from 'react';
+import styles from './manicure2.module.css';
+import Home from '@/components/templates/manicure2/Home';
+import BookingFlow from '@/components/templates/manicure2/BookingFlow';
+import MyAppointments from '@/components/templates/manicure2/MyAppointments';
+import Location from '@/components/templates/manicure2/Location';
+import Success from '@/components/templates/manicure2/Success';
+
+type Screen = 'home' | 'booking' | 'appointments' | 'location' | 'success';
+
+const Manicure2Template = ({ tenant, services, professionals }: { tenant?: any, services?: any[], professionals?: any[] }) => {
+  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  const [bookingData, setBookingData] = useState<any>(null);
+
+  const navigateTo = (screen: Screen) => {
+    setCurrentScreen(screen);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBookingSuccess = (data: any) => {
+    setBookingData(data);
+    const savedAppts = JSON.parse(localStorage.getItem('manicure2_appointments') || '[]');
+    localStorage.setItem('manicure2_appointments', JSON.stringify([...savedAppts, data]));
+    navigateTo('success');
+  };
+
+  return (
+    <div className={styles.app}>
+      {currentScreen === 'home' && (
+        <Home onNavigate={(s) => navigateTo(s as Screen)} tenant={tenant} />
+      )}
+      
+      {currentScreen === 'booking' && (
+        <BookingFlow 
+          onBack={() => navigateTo('home')} 
+          onSuccess={handleBookingSuccess} 
+          services={services}
+          professionals={professionals}
+        />
+      )}
+
+      {currentScreen === 'appointments' && (
+        <MyAppointments onBack={() => navigateTo('home')} />
+      )}
+
+      {currentScreen === 'location' && (
+        <Location onBack={() => navigateTo('home')} tenant={tenant} />
+      )}
+
+      {currentScreen === 'success' && bookingData && (
+        <Success 
+          data={bookingData} 
+          onHome={() => navigateTo('home')} 
+          onViewAppointments={() => navigateTo('appointments')} 
+        />
+      )}
+    </div>
+  );
+};
+
+export default Manicure2Template;
