@@ -78,6 +78,7 @@ export async function GET(request: Request) {
         whatsapp_numero: true,
         instancia: true,
         ativo: true,
+        api_key: true,
         criado_em: true
       }
     });
