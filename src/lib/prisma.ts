@@ -8,9 +8,11 @@ const adapter = new PrismaLibSql({ url, authToken })
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({ adapter })
+// TEMP: Forçando renovação para detectar novas colunas (remover após salvar com sucesso)
+const prismaInstance = new PrismaClient({ adapter })
+
+export const prisma = prismaInstance
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 

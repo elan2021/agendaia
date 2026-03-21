@@ -40,7 +40,7 @@ const Location: React.FC<LocationProps> = ({ onBack, tenant }) => {
         <div className={styles.mapInfoCard}>
           <div className={styles.mapPinLabel}><MapPin size={12} /> Localização Premium</div>
           <h3 className={styles.mapStudioName}>{bizName}</h3>
-          <p className={styles.mapAddress}>Rua das Flores, 142 • Sala 04<br/>Centro, São José do Rio Preto - SP</p>
+          <p className={styles.mapAddress}>{tenant?.endereco || "Rua das Flores, 142 • Sala 04\nCentro, São José do Rio Preto - SP"}</p>
 
           <div className={styles.infoRows}>
             <div className={styles.infoRow}>
@@ -61,7 +61,7 @@ const Location: React.FC<LocationProps> = ({ onBack, tenant }) => {
             <div className={styles.infoRow}>
               <div className={styles.infoRowIcon}><Instagram size={18} color="#B85470" /></div>
               <div className={styles.infoRowText}>
-                <div className={styles.infoRowTitle}>@{tenant?.slug || 'nailsbyfernanda'}</div>
+                <div className={styles.infoRowTitle}>{tenant?.instagram_url || ('@' + (tenant?.slug || 'nailsbyfernanda'))}</div>
                 <div className={styles.infoRowSub}>Nos acompanhe no Insta</div>
               </div>
             </div>

@@ -155,3 +155,40 @@ export async function updateTenantTemplate(template: string) {
   }
 }
 
+export async function updateBusinessInfo(data: {
+  nome: string;
+  proprietario_nome?: string;
+  whatsapp_numero?: string;
+  endereco?: string;
+  logo_url?: string;
+  instagram_url?: string;
+  facebook_url?: string;
+}) {
+  const tenant = await getCurrentTenant();
+  if (!tenant) return { error: 'Não autorizado' };
+
+  try {
+    const updated = await (prisma as any).tenant.update({
+      where: { id: tenant.id },
+      data: {
+        nome: data.nome,
+        proprietario_nome: data.proprietario_nome,
+        whatsapp_numero: data.whatsapp_numero,
+        endereco: data.endereco,
+        logo_url: data.logo_url,
+        instagram_url: data.instagram_url,
+        facebook_url: data.facebook_url,
+      }
+    });
+
+    revalidatePath('/dashboard/configuracoes');
+    revalidatePath('/dashboard/configuracoes/negocio');
+    revalidatePath(`/${updated.slug}`);
+    
+    return { success: true, tenant: updated };
+  } catch (error: any) {
+    console.error('ERRO DETALHADO AO ATUALIZAR TENANT:', error);
+    return { error: `Erro ao salvar as informações: ${error.message || 'Erro desconhecido'}` };
+  }
+}
+

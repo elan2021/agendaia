@@ -36,7 +36,7 @@ const Location: React.FC<LocationProps> = ({ onBack, tenant }) => {
         <div className={styles.mapInfoCard}>
           <div className={styles.mapPinLabel}><MapPin size={12} /> Localização Premium</div>
           <h3 className={styles.mapStudioName}>{bizName}</h3>
-          <p className={styles.mapAddress}>Av. Brasil, 880 • Sala 02<br/>Centro, São José do Rio Preto - SP</p>
+          <p className={styles.mapAddress}>{tenant?.endereco || "Endereço não configurado • Centro\nSão José do Rio Preto - SP"}</p>
 
           <div className={styles.infoRows}>
             <div className={styles.infoRow}>

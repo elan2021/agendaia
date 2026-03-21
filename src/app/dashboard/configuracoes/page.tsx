@@ -70,7 +70,7 @@ export default function TenantSettingsPage() {
   }
 
   const sections = [
-    { icon: Building, label: 'Informações do Negócio', description: 'Nome, logo, endereço e horários de funcionamento.' },
+    { icon: Building, label: 'Informações do Negócio', description: 'Nome, logo, endereço e horários de funcionamento.', href: '/dashboard/configuracoes/negocio' },
     { icon: User, label: 'Perfil do Administrador', description: 'Seus dados pessoais e credenciais de acesso.' },
     { icon: Palette, label: 'Identidade Visual', description: 'Cores, fontes e personalização do agendamento online.' },
     { icon: Smartphone, label: 'Integração WhatsApp', description: 'Status da conexão e números autorizados.' },
@@ -86,17 +86,33 @@ export default function TenantSettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sections.map((section, i) => (
-          <button key={i} className="flex items-start gap-5 p-7 bg-white border border-brand-neutral-100 rounded-[32px] hover:border-brand-coral hover:shadow-xl hover:-translate-y-1 transition-all text-left group">
-            <div className="p-4 bg-brand-neutral-50 rounded-2xl text-brand-neutral-400 group-hover:bg-brand-coral group-hover:text-white transition-all shadow-sm">
-              <section.icon size={24} />
+        {sections.map((section, i) => {
+          const Content = (
+            <div className="flex items-start gap-5 p-7 bg-white border border-brand-neutral-100 rounded-[32px] hover:border-brand-coral hover:shadow-xl hover:-translate-y-1 transition-all text-left group w-full h-full">
+              <div className="p-4 bg-brand-neutral-50 rounded-2xl text-brand-neutral-400 group-hover:bg-brand-coral group-hover:text-white transition-all shadow-sm">
+                <section.icon size={24} />
+              </div>
+              <div>
+                <h3 className="font-black text-brand-navy mb-1 uppercase text-xs tracking-wider">{section.label}</h3>
+                <p className="text-[10px] text-brand-neutral-500 leading-relaxed font-bold uppercase tracking-tight">{section.description}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-black text-brand-navy mb-1 uppercase text-xs tracking-wider">{section.label}</h3>
-              <p className="text-[10px] text-brand-neutral-500 leading-relaxed font-bold uppercase tracking-tight">{section.description}</p>
-            </div>
-          </button>
-        ))}
+          );
+
+          if (section.href) {
+            return (
+              <a key={i} href={section.href}>
+                {Content}
+              </a>
+            );
+          }
+
+          return (
+            <button key={i} className="outline-none">
+              {Content}
+            </button>
+          );
+        })}
       </div>
 
       {/* Template Selection Section */}

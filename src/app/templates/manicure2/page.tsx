@@ -42,7 +42,7 @@ const Manicure2Template = ({ tenant, services, professionals }: { tenant?: any, 
       )}
 
       {currentScreen === 'appointments' && (
-        <MyAppointments onBack={() => navigateTo('home')} />
+        <MyAppointments onBack={() => navigateTo('home')} tenantId={tenant?.id} />
       )}
 
       {currentScreen === 'location' && (

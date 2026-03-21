@@ -24,6 +24,11 @@ model Tenant {
   api_key         String   @unique @default(uuid())
   instancia        String   @default("default")
   template        String   @default("manicure1")
+  endereco        String?
+  logo_url        String?
+  instagram_url   String?
+  facebook_url    String?
+  horario_funcionamento String? // JSON string
   ativo           Boolean  @default(true)
   criado_em       DateTime @default(now())
 }
