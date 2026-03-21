@@ -110,6 +110,7 @@ export default function AgendaPage() {
         servico_id: formServico,
         profissional_id: formPro,
         inicio: inicioDate.toISOString(),
+        status: 'confirmado'
       });
 
       if (res.success) {
