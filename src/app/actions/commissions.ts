@@ -51,8 +51,8 @@ export async function getCommissionsData(mes: number, ano: number): Promise<Comm
     return profissionais.map((pro: any) => {
       const ags = agendamentos.filter((a: any) => a.profissional_id === pro.id);
       const faturamento_total = ags.reduce((sum: number, a: any) => {
-        const s = servicoMap.get(a.servico_id) as any;
-        return sum + (s?.preco ?? 0);
+        const s = servicoMap.get(a.servico_id);
+        return sum + ((s as any)?.preco ?? 0);
       }, 0);
 
       let comissao_calculada = 0;
