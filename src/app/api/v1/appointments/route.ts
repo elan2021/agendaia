@@ -169,7 +169,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Service not found.' }, { status: 404 });
       }
 
-      const inicioDate = new Date(v.inicio);
+      // If no timezone offset provided, treat as Brasília (UTC-3)
+      const inicioStr = v.inicio.includes('+') || v.inicio.endsWith('Z') || v.inicio.includes('-', 11)
+        ? v.inicio
+        : v.inicio + '-03:00';
+      const inicioDate = new Date(inicioStr);
       const fimDate = new Date(inicioDate.getTime() + servico.duracao_min * 60000);
 
       // 3. Create Appointment
