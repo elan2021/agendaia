@@ -22,8 +22,15 @@ export async function GET() {
     hour12: false
   });
 
+  // Dia da semana
+  const diaSemana = now.toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    timeZone: 'America/Sao_Paulo'
+  });
+
   return NextResponse.json({
-    message: `hoje é ${data} ${hora}`,
+    message: `hoje é ${diaSemana}, ${data} ${hora}`,
+    dia_semana: diaSemana,
     data,
     hora,
     timestamp: now.toISOString()
