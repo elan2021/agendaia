@@ -39,18 +39,19 @@ export async function GET(request: Request) {
       if (!client) {
         return NextResponse.json({ 
           success: false, 
-          message: 'Client not found.' 
-        }, { status: 404 });
+          message: 'Cliente Não Cadastrado' 
+        }, { status: 200 });
       }
 
       return NextResponse.json({
         success: true,
+        message: 'Cliente Cadastrado',
         client: {
           nome: client.nome,
           telefone: client.telefone,
           criado_em: client.criado_em
         }
-      });
+      }, { status: 200 });
 
     } finally {
       await tenantPrisma.$disconnect();
