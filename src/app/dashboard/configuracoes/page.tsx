@@ -304,6 +304,20 @@ export default function TenantSettingsPage() {
                         </div>
                     </div>
                 </div>
+
+                <div className="pt-4 border-t border-white/10">
+                    <h5 className="text-brand-coral font-black text-[10px] uppercase tracking-[0.2em] mb-4">Profissionais</h5>
+                    <div className="space-y-4">
+                        <div className="bg-white/5 rounded-3xl p-6 border border-white/5">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-3">Listar Profissionais Ativos</h4>
+                            <p className="text-[10px] text-white/40 mb-3 font-bold uppercase">Método: GET | URL: /api/v1/professionals</p>
+                            <div className="bg-slate-900 rounded-xl p-4 font-mono text-[11px] text-emerald-400 border border-white/5 overflow-x-auto whitespace-pre">
+                                curl -X GET "{origin}/api/v1/professionals" \<br/>
+                                &nbsp;&nbsp;-H "X-API-Key: {tenant.api_key}"
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div className="pt-4 border-t border-white/10">
                     <h5 className="text-brand-coral font-black text-[10px] uppercase tracking-[0.2em] mb-4">Administração Global (Público)</h5>
                     <div className="space-y-4">
@@ -322,6 +336,14 @@ export default function TenantSettingsPage() {
                             <p className="text-[10px] text-white/40 mb-3 font-bold uppercase">Método: GET | URL: /api/v1/public/tenants?instancia=ID</p>
                             <div className="bg-slate-900 rounded-xl p-4 font-mono text-[11px] text-emerald-400 border border-white/5 overflow-x-auto whitespace-pre">
                                 curl -X GET "{origin}/api/v1/public/tenants?instancia=instancia-01"
+                            </div>
+                        </div>
+
+                        <div className="bg-white/5 rounded-3xl p-6 border border-white/5">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-3">Data e Hora Atual do Servidor</h4>
+                            <p className="text-[10px] text-white/40 mb-3 font-bold uppercase">Método: GET | URL: /api/v1/public/time — Retorna data, hora e dia da semana em pt-BR</p>
+                            <div className="bg-slate-900 rounded-xl p-4 font-mono text-[11px] text-emerald-400 border border-white/5 overflow-x-auto whitespace-pre">
+                                curl -X GET "{origin}/api/v1/public/time"
                             </div>
                         </div>
                     </div>
