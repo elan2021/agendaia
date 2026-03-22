@@ -29,6 +29,9 @@ model Tenant {
   instagram_url   String?
   facebook_url    String?
   horario_funcionamento String? // JSON string
+  ia_persona       String?  @default("Você é uma assistente virtual simpática...")
+  ia_ativo         Boolean  @default(true)
+  ia_config        String?  // JSON string for flags
   ativo           Boolean  @default(true)
   criado_em       DateTime @default(now())
 }
