@@ -31,8 +31,7 @@ export async function GET(request: Request) {
         select: {
           id: true,
           nome: true,
-          especialidade: true,
-          telefone: true,
+          especialidades: true,
         },
         orderBy: { nome: 'asc' },
       });
