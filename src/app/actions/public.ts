@@ -30,8 +30,8 @@ export async function getPublicAppointmentsByPhone(tenantId: string, phone: stri
         success: true,
         appointments: appointments.map((app: any) => ({
           id: app.id,
-          date: new Date(app.inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
-          time: new Date(app.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          date: new Date(app.inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' }),
+          time: new Date(app.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }),
           service: app.servico ? app.servico.nome : 'Serviço Personalizado',
           prof: app.profissional ? app.profissional.nome : 'Profissional',
           price: app.servico && app.servico.preco ? `R$ ${app.servico.preco.toFixed(2).replace('.', ',')}` : '---',
