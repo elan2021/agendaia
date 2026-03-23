@@ -82,13 +82,22 @@ export async function getDashboardStats() {
 
     const monthlyRevenue = allAgendamentos.reduce((sum: number, a: any) => sum + (a.servico?.preco || 0), 0);
 
+    const formattedNext = nextAppointments.map((a: any) => {
+      const d = new Date(a.inicio);
+      return {
+        ...a,
+        hora_display: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }),
+        data_display: d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'America/Sao_Paulo' }),
+      };
+    });
+
     return {
       totalAppointments,
       activeClients,
       todayAppointments,
       newClientsMonth,
       monthlyRevenue,
-      nextAppointments
+      nextAppointments: formattedNext
     };
   } catch (error) {
     console.error('Erro ao buscar stats do dashboard (tenant):', error);
