@@ -81,7 +81,7 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-brand-navy font-sans">Bem-vindo de volta! 👋</h2>
-          <p className="text-brand-neutral-500 mt-1">Veja como está seu negócio hoje, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}.</p>
+          <p className="text-brand-neutral-500 mt-1">Veja como está seu negócio hoje, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', timeZone: 'America/Sao_Paulo' })}.</p>
         </div>
         <Link 
           href="/dashboard/agenda"
@@ -126,14 +126,14 @@ export default function DashboardPage() {
               statsData.nextAppointments.map((app: any) => (
                 <div key={app.id} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-brand-neutral-50 transition-colors group relative overflow-hidden ring-1 ring-brand-neutral-100/50">
                   <div className="w-14 h-14 bg-brand-cream rounded-xl flex flex-col items-center justify-center text-brand-navy flex-shrink-0">
-                    <span className="text-sm font-black">{new Date(app.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-sm font-black">{new Date(app.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-brand-navy truncate">{app.cliente?.nome || 'Cliente não identificado'}</p>
                     <div className="flex items-center gap-3 mt-1 text-[10px] text-brand-neutral-400 font-extrabold uppercase tracking-widest">
                       <span className="flex items-center gap-1">
                         <Calendar size={12} />
-                        {new Date(app.inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                        {new Date(app.inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'America/Sao_Paulo' })}
                       </span>
                       <span className="w-1 h-1 bg-brand-neutral-200 rounded-full" />
                       <span className="text-brand-coral">{app.servico?.nome || 'Serviço Padrão'}</span>
