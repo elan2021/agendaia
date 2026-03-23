@@ -204,3 +204,12 @@ export async function getClients() {
     orderBy: { criado_em: 'desc' },
   });
 }
+
+export async function deleteClient(telefone: string) {
+  const tPrisma = await getPrisma();
+  if (!tPrisma) return { error: 'Banco não provisionado ou não autorizado.' };
+
+  await (tPrisma as any).cliente.delete({ where: { telefone } });
+  revalidatePath('/dashboard/clientes');
+  return { success: true };
+}

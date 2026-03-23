@@ -11,14 +11,17 @@ import {
   ChevronRight,
   TrendingUp,
   Star,
-  UserPlus
+  UserPlus,
+  Trash2
 } from 'lucide-react';
-import { getClients } from '@/app/actions/appointments';
+import { getClients, deleteClient } from '@/app/actions/appointments';
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [confirmDeleteTel, setConfirmDeleteTel] = useState<string | null>(null);
+  const [deletingTel, setDeletingTel] = useState<string | null>(null);
 
   useEffect(() => {
     fetchClientes();
@@ -29,6 +32,16 @@ export default function ClientesPage() {
     const data = await getClients();
     setClientes(data);
     setIsLoading(false);
+  }
+
+  async function handleDelete(telefone: string) {
+    setDeletingTel(telefone);
+    const res = await deleteClient(telefone);
+    if (res.success) {
+      setClientes(prev => prev.filter(c => c.telefone !== telefone));
+    }
+    setDeletingTel(null);
+    setConfirmDeleteTel(null);
   }
 
   const filteredClientes = clientes.filter(c => 
@@ -168,9 +181,32 @@ export default function ClientesPage() {
                         <button className="p-2 text-brand-neutral-400 hover:text-brand-coral hover:bg-brand-coral/5 rounded-lg transition-all opacity-0 group-hover:opacity-100">
                           <MessageSquare size={18} />
                         </button>
-                        <button className="p-2 text-brand-neutral-400 hover:text-brand-navy hover:bg-brand-neutral-100 rounded-lg transition-all">
-                          <MoreVertical size={18} />
-                        </button>
+                        {confirmDeleteTel === cliente.telefone ? (
+                          <div className="flex items-center gap-1.5 bg-red-50 border border-red-100 rounded-xl px-2 py-1">
+                            <span className="text-[9px] font-black text-red-500 uppercase tracking-wider">Excluir?</span>
+                            <button
+                              onClick={() => handleDelete(cliente.telefone)}
+                              disabled={deletingTel === cliente.telefone}
+                              className="text-[9px] font-black text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded-lg uppercase transition-colors disabled:opacity-50"
+                            >
+                              {deletingTel === cliente.telefone ? '...' : 'Sim'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteTel(null)}
+                              className="text-[9px] font-black text-brand-neutral-400 hover:text-brand-navy px-1 uppercase transition-colors"
+                            >
+                              Não
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteTel(cliente.telefone)}
+                            className="p-2 text-brand-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            title="Excluir cliente"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
