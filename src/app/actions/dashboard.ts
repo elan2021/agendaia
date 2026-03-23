@@ -22,11 +22,23 @@ export async function getDashboardStats() {
   // Use the tenant-specific prisma client
   const tPrisma = await getTenantPrisma(tenant.turso_db_url, tenant.turso_db_token);
 
+  // Helper to get Brasilia Date
+  const getBRDate = (d: Date) => new Date(d.getTime() - 3 * 3600000);
+
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+  const nowBR = getBRDate(now);
   
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  // Today range in UTC for the query
+  // Zero hours in BR today
+  const brTodayStart = new Date(nowBR.getFullYear(), nowBR.getMonth(), nowBR.getDate(), 0, 0, 0);
+  const brTodayEnd = new Date(nowBR.getFullYear(), nowBR.getMonth(), nowBR.getDate(), 23, 59, 59);
+  
+  // Convert back to UTC for Prisma
+  const todayStartUTC = new Date(brTodayStart.getTime() + 3 * 3600000).toISOString();
+  const todayEndUTC = new Date(brTodayEnd.getTime() + 3 * 3600000).toISOString();
+  
+  const monthStartBR = new Date(nowBR.getFullYear(), nowBR.getMonth(), 1, 0, 0, 0);
+  const monthStartUTC = new Date(monthStartBR.getTime() + 3 * 3600000).toISOString();
 
   try {
     const [
@@ -34,24 +46,25 @@ export async function getDashboardStats() {
       activeClients,
       todayAppointments,
       newClientsMonth,
-      nextAppointments
+      nextAppointmentsRaw,
+      allAgendamentos
     ] = await Promise.all([
       (tPrisma as any).agendamento.count(),
       (tPrisma as any).cliente.count(),
       (tPrisma as any).agendamento.count({
         where: {
-          inicio: { gte: todayStart, lte: todayEnd },
+          inicio: { gte: todayStartUTC, lte: todayEndUTC },
           status: { not: 'cancelado' }
         }
       }),
       (tPrisma as any).cliente.count({
         where: {
-          criado_em: { gte: monthStart }
+          criado_em: { gte: monthStartUTC }
         }
       }),
       (tPrisma as any).agendamento.findMany({
         where: {
-          inicio: { gte: new Date(now.getTime() - 60 * 60000).toISOString() }, // De 1 hora atrás em diante
+          inicio: { gte: now.toISOString() },
           status: { not: 'cancelado' }
         },
         include: {
@@ -64,30 +77,31 @@ export async function getDashboardStats() {
       }),
       (tPrisma as any).agendamento.findMany({
         where: { 
-          inicio: { gte: monthStart },
+          inicio: { gte: monthStartUTC },
           status: { in: ['confirmado', 'pago'] }
         },
-        include: { servico: true, profissional: true }
+        include: { servico: true }
       })
     ]);
 
-    // Calculate Revenue (estimated from confirmed/paid)
-    const allAgendamentos = await (tPrisma as any).agendamento.findMany({
-      where: { 
-        inicio: { gte: monthStart },
-        status: { in: ['confirmado', 'pago'] }
-      },
-      include: { servico: true }
-    });
-
+    // Calculate Revenue
     const monthlyRevenue = allAgendamentos.reduce((sum: number, a: any) => sum + (a.servico?.preco || 0), 0);
 
-    const formattedNext = nextAppointments.map((a: any) => {
+    const monthNames = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+
+    const formattedNext = nextAppointmentsRaw.map((a: any) => {
       const d = new Date(a.inicio);
+      const br = getBRDate(d);
+      
+      const day = br.getUTCDate().toString().padStart(2, '0');
+      const month = monthNames[br.getUTCMonth()];
+      const hours = br.getUTCHours().toString().padStart(2, '0');
+      const mins = br.getUTCMinutes().toString().padStart(2, '0');
+
       return {
         ...a,
-        hora_display: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }),
-        data_display: d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'America/Sao_Paulo' }),
+        hora_display: `${hours}:${mins}`,
+        data_display: `${day} DE ${month}.`
       };
     });
 
