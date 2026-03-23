@@ -209,6 +209,8 @@ export async function deleteClient(telefone: string) {
   const tPrisma = await getPrisma();
   if (!tPrisma) return { error: 'Banco não provisionado ou não autorizado.' };
 
+  // Remove related appointments first to respect foreign key constraints
+  await (tPrisma as any).agendamento.deleteMany({ where: { cliente_tel: telefone } });
   await (tPrisma as any).cliente.delete({ where: { telefone } });
   revalidatePath('/dashboard/clientes');
   return { success: true };
