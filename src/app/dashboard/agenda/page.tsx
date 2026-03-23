@@ -18,9 +18,10 @@ import {
   Check,
   Users,
   TrendingUp,
-  Info
+  Info,
+  Trash2
 } from 'lucide-react';
-import { getAppointments, createAppointment, getAvailableSlots, getClientByPhone } from '@/app/actions/appointments';
+import { getAppointments, createAppointment, deleteAppointment, getAvailableSlots, getClientByPhone } from '@/app/actions/appointments';
 import { getProfessionals } from '@/app/actions/professionals';
 import { getServices } from '@/app/actions/services';
 
@@ -43,6 +44,8 @@ export default function AgendaPage() {
   const [services, setServices] = useState<any[]>([]);
   const [selectedProId, setSelectedProId] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // --- Modal Form State ---
@@ -126,6 +129,16 @@ export default function AgendaPage() {
     });
   }
 
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    const res = await deleteAppointment(id);
+    if (res.success) {
+      setAppointments(prev => prev.filter(a => a.id !== id));
+    }
+    setDeletingId(null);
+    setConfirmDeleteId(null);
+  }
+
   const changeDate = (days: number) => {
     const next = new Date(currentDate);
     next.setDate(next.getDate() + days);
@@ -206,11 +219,39 @@ export default function AgendaPage() {
                   const h = a.inicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                   return h === hour;
                 }).map((app) => (
-                  <div key={app.id} className="bg-white border border-brand-neutral-100 p-4 rounded-2xl shadow-sm cursor-pointer hover:shadow-md hover:border-brand-coral/20 transition-all group/card relative overflow-hidden">
+                  <div key={app.id} className="bg-white border border-brand-neutral-100 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-coral/20 transition-all group/card relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-brand-coral" />
                     <div className="flex items-center justify-between mb-2">
                        <span className="text-[10px] font-black text-brand-coral uppercase tracking-widest">{app.servico.nome}</span>
-                       <span className="text-xs font-black text-brand-navy">R$ {app.servico.preco.toFixed(2)}</span>
+                       <div className="flex items-center gap-2">
+                         <span className="text-xs font-black text-brand-navy">R$ {app.servico.preco.toFixed(2)}</span>
+                         {confirmDeleteId === app.id ? (
+                           <div className="flex items-center gap-1.5 bg-red-50 border border-red-100 rounded-xl px-2 py-1">
+                             <span className="text-[9px] font-black text-red-500 uppercase tracking-wider">Excluir?</span>
+                             <button
+                               onClick={() => handleDelete(app.id)}
+                               disabled={deletingId === app.id}
+                               className="text-[9px] font-black text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded-lg uppercase transition-colors disabled:opacity-50"
+                             >
+                               {deletingId === app.id ? '...' : 'Sim'}
+                             </button>
+                             <button
+                               onClick={() => setConfirmDeleteId(null)}
+                               className="text-[9px] font-black text-brand-neutral-400 hover:text-brand-navy px-1 uppercase transition-colors"
+                             >
+                               Não
+                             </button>
+                           </div>
+                         ) : (
+                           <button
+                             onClick={() => setConfirmDeleteId(app.id)}
+                             className="opacity-0 group-hover/card:opacity-100 p-1.5 text-brand-neutral-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                             title="Excluir agendamento"
+                           >
+                             <Trash2 size={14} />
+                           </button>
+                         )}
+                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
