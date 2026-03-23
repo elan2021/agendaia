@@ -89,7 +89,16 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
     }
   };
 
-  const days = Array.from({ length: 7 }, (_, i) => i + 15); // Ex: 15 a 21 de Março
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return {
+      day: d.getDate(),
+      weekday: d.toLocaleDateString('pt-BR', { weekday: 'short' }).split('.')[0].toUpperCase(),
+      month: d.toLocaleDateString('pt-BR', { month: 'long' }),
+      fullDate: d
+    };
+  });
 
   return (
     <div className={`${styles.screen} ${styles.active}`}>
@@ -123,7 +132,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
           <div className={`${styles.summaryBar} ${styles.summaryBarVisible}`}>
             <span className={styles.sumTag}>{selectedProf.name}</span>
             {selectedService && <span className={styles.sumTag}>{selectedService.name}</span>}
-            {selectedDate && <span className={styles.sumTag}>{selectedDate} Mar</span>}
+            {selectedDate && <span className={styles.sumTag}>{selectedDate} {days.find(d => d.day === selectedDate)?.month.slice(0, 3)}</span>}
             {selectedTime && <span className={styles.sumTag}>{selectedTime}</span>}
           </div>
         )}
@@ -174,9 +183,9 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
               <div className={styles.formLabel}><span className={styles.stepNum}>3</span>Escolha a data</div>
               <div className={styles.calStrip}>
                 {days.map(d => (
-                  <div key={d} className={`${styles.calDay} ${selectedDate === d ? styles.calDaySelected : ''}`} onClick={() => handleDateSelect(d)}>
-                    <div className={styles.calWd}>{d === 15 ? 'Dom' : d === 16 ? 'Seg' : d === 17 ? 'Ter' : d === 18 ? 'Qua' : d === 19 ? 'Qui' : d === 20 ? 'Sex' : 'Sáb'}</div>
-                    <div className={styles.calNum}>{d}</div>
+                  <div key={d.day} className={`${styles.calDay} ${selectedDate === d.day ? styles.calDaySelected : ''}`} onClick={() => handleDateSelect(d.day)}>
+                    <div className={styles.calWd}>{d.weekday}</div>
+                    <div className={styles.calNum}>{d.day}</div>
                   </div>
                 ))}
               </div>

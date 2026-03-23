@@ -77,7 +77,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
       onSuccess({
         prof: selectedBarber.name,
         service: selectedService.name,
-        date: `Março ${selectedDate}`,
+        date: `${days.find(d => d.day === selectedDate)?.fullMonth} ${selectedDate}`,
         time: selectedTime,
         price: selectedService.price,
         ...formData
@@ -85,7 +85,16 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
     }
   };
 
-  const days = Array.from({ length: 7 }, (_, i) => i + 15);
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return {
+      day: d.getDate(),
+      month: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
+      fullMonth: d.toLocaleDateString('pt-BR', { month: 'long' }),
+      fullDate: d
+    };
+  });
 
   return (
     <div className={`${styles.screen} ${styles.active}`}>
@@ -119,7 +128,7 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
           <div className={`${styles.summaryBar} ${styles.summaryBarVisible}`}>
             <span className={styles.sumTag}>{selectedBarber.name}</span>
             {selectedService && <span className={styles.sumTag}>{selectedService.name}</span>}
-            {selectedDate && <span className={styles.sumTag}>{selectedDate} Mar</span>}
+            {selectedDate && <span className={styles.sumTag}>{selectedDate} {days.find(d => d.day === selectedDate)?.month}</span>}
             {selectedTime && <span className={styles.sumTag}>{selectedTime}</span>}
           </div>
         )}
@@ -164,9 +173,9 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
               <div className={styles.formLabel}><span className={styles.stepNum}>3</span>Escolha a data</div>
               <div className={styles.calStrip}>
                 {days.map(d => (
-                  <div key={d} className={`${styles.calDay} ${selectedDate === d ? styles.calDaySelected : ''}`} onClick={() => handleDateSelect(d)}>
-                    <div className={styles.calWd}>Mar</div>
-                    <div className={styles.calNum}>{d}</div>
+                  <div key={d.day} className={`${styles.calDay} ${selectedDate === d.day ? styles.calDaySelected : ''}`} onClick={() => handleDateSelect(d.day)}>
+                    <div className={styles.calWd}>{d.month}</div>
+                    <div className={styles.calNum}>{d.day}</div>
                   </div>
                 ))}
               </div>
