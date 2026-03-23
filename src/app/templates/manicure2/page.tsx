@@ -38,6 +38,7 @@ const Manicure2Template = ({ tenant, services, professionals }: { tenant?: any, 
           onSuccess={handleBookingSuccess} 
           services={services}
           professionals={professionals}
+          tenantId={tenant?.id}
         />
       )}
 

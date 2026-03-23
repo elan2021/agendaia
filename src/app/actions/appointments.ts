@@ -1,7 +1,7 @@
 "use server";
 
 import { getCurrentTenant } from './tenants';
-import { getTenantPrisma } from '@/lib/prisma';
+import { getTenantPrisma, prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -19,6 +19,48 @@ async function getPrisma() {
   const tenant = await getCurrentTenant();
   if (!tenant || !tenant.turso_db_url) return null;
   return await getTenantPrisma(tenant.turso_db_url, tenant.turso_db_token);
+}
+
+export async function createPublicAppointment(tenantId: string, data: z.infer<typeof AppointmentSchema>) {
+  // Get tenant info from global DB to get Turso credentials
+  const tenant = await (prisma as any).tenant.findUnique({ where: { id: tenantId } });
+  if (!tenant || !tenant.turso_db_url) {
+    return { error: 'Empresa não encontrada ou não configurada.' };
+  }
+
+  const tPrisma = await getTenantPrisma(tenant.turso_db_url, tenant.turso_db_token);
+  if (!tPrisma) return { error: 'Falha na conexão com o banco de dados.' };
+
+  const v = AppointmentSchema.parse(data);
+
+  // Garante que o cliente exista
+  await (tPrisma as any).cliente.upsert({
+    where: { telefone: v.cliente_tel },
+    create: { telefone: v.cliente_tel, nome: v.cliente_nome },
+    update: { nome: v.cliente_nome },
+  });
+
+  // Busca duração do serviço
+  const servico = await (tPrisma as any).servico.findUnique({ where: { id: v.servico_id } });
+  if (!servico) throw new Error("Serviço não encontrado");
+
+  const inicioDate = new Date(v.inicio);
+  const fimDate = new Date(inicioDate.getTime() + servico.duracao_min * 60000);
+
+  const appointment = await (tPrisma as any).agendamento.create({
+    data: {
+      cliente_tel: v.cliente_tel,
+      servico_id: v.servico_id,
+      profissional_id: v.profissional_id,
+      inicio: inicioDate,
+      fim: fimDate,
+      status: v.status,
+      observacoes: v.observacoes,
+    },
+  });
+
+  revalidatePath('/dashboard/agenda');
+  return { success: true, appointment };
 }
 
 export async function createAppointment(data: z.infer<typeof AppointmentSchema>) {

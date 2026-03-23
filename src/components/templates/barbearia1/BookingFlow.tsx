@@ -2,13 +2,15 @@
 
 import React, { useState } from 'react';
 import styles from '@/app/templates/barbearia1/barbearia1.module.css';
-import { ChevronLeft, Check, Clock, Calendar } from 'lucide-react';
+import { ChevronLeft, Check, Clock, Calendar, Loader2 } from 'lucide-react';
+import { createPublicAppointment } from '@/app/actions/appointments';
 
 interface BookingFlowProps {
   onBack: () => void;
   onSuccess: (data: any) => void;
   services?: any[];
   professionals?: any[];
+  tenantId?: string;
 }
 
 const fallbackBarbers = [
@@ -26,7 +28,7 @@ const fallbackServices = [
   { id: 's6', name: 'Hidratação Barba', price: 25.0, duration_min: 20, emoji: '💧', desc: 'Produtos óleo e balm' },
 ];
 
-const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, professionals }) => {
+const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, professionals, tenantId }) => {
   const finalBarbers = professionals && professionals.length > 0 ? professionals.map(p => ({
     id: p.id,
     name: p.nome,
@@ -50,6 +52,8 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', phone: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleBarberSelect = (barber: any) => {
     setSelectedBarber(barber);
@@ -71,17 +75,52 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
     setStep(5);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.name && formData.phone) {
-      onSuccess({
-        prof: selectedBarber.name,
-        service: selectedService.name,
-        date: `${days.find(d => d.day === selectedDate)?.fullMonth} ${selectedDate}`,
-        time: selectedTime,
-        price: selectedService.price,
-        ...formData
-      });
+    if (!tenantId) {
+      setError("ID da empresa não identificado.");
+      return;
+    }
+
+    if (formData.name && formData.phone && selectedDate && selectedTime) {
+      setIsSubmitting(true);
+      setError(null);
+
+      try {
+        const dayObj = days.find(d => d.day === selectedDate);
+        if (!dayObj) throw new Error("Data inválida");
+
+        const [hours, minutes] = selectedTime.split(':').map(Number);
+        const finalDate = new Date(dayObj.fullDate);
+        finalDate.setHours(hours, minutes, 0, 0);
+
+        const res = await createPublicAppointment(tenantId, {
+          cliente_nome: formData.name,
+          cliente_tel: formData.phone.replace(/\D/g, ''),
+          servico_id: selectedService.id,
+          profissional_id: selectedBarber.id,
+          inicio: finalDate.toISOString(),
+          status: 'pendente',
+        });
+
+        if (res.success) {
+          onSuccess({
+            prof: selectedBarber.name,
+            service: selectedService.name,
+            date: `${dayObj.fullMonth} ${selectedDate}`,
+            time: selectedTime,
+            price: selectedService.price,
+            ...formData
+          });
+        } else {
+          setError(res.error || "Erro ao realizar agendamento");
+        }
+      } catch (err: any) {
+        setError("Erro ao processar agendamento.");
+        console.error(err);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -219,8 +258,18 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
                   <Clock size={16} />
                   <span>Respeite o horário agendado. Tolerância de 10 minutos.</span>
                 </div>
+                {error && <div className={styles.errorMsg} style={{ color: '#ff4d4d', fontSize: '11px', marginBottom: '8px' }}>{error}</div>}
                 <div className={`${styles.btnArea} ${styles.btnAreaVisible}`}>
-                  <button type="submit" className={styles.btnConfirm}>Confirmar Agendamento</button>
+                  <button type="submit" className={styles.btnConfirm} disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="animate-spin" size={16} />
+                        Reservando...
+                      </>
+                    ) : (
+                      'Confirmar Agendamento'
+                    )}
+                  </button>
                 </div>
               </form>
             </div>
