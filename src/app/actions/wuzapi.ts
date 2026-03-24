@@ -198,13 +198,22 @@ export async function getWuzapiQR() {
     // Auto-healing
     if (response.status === 401) {
       console.warn("WuzAPI retornou 401 no QR. Tentando recriar usuário...");
-      const newToken = await ensureWuzapiUser(tenant, true);
-      if (newToken) {
-        response = await fetch(`${wuzapiUrl}/session/qr`, {
-          method: 'GET',
-          headers: { 'token': newToken },
-          cache: 'no-store'
-        });
+      try {
+        const resCreate = await createWuzapiUser(tenant.slug, tenant.api_key);
+        if (resCreate.success) {
+           const { prisma } = await import('@/lib/prisma');
+           await (prisma as any).tenant.update({ where: { id: tenant.id }, data: { instancia: tenant.api_key } });
+           
+           response = await fetch(`${wuzapiUrl}/session/qr`, {
+             method: 'GET',
+             headers: { 'token': tenant.api_key },
+             cache: 'no-store'
+           });
+        } else {
+           return { error: `Falha na Auto-recriação do admin/users do WuzAPI: ${resCreate.error}` };
+        }
+      } catch (catchedErr: any) {
+         return { error: `Erro interno no auto-healing: ${catchedErr.message}` };
       }
     }
 
