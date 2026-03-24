@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import styles from '@/app/templates/manicure1/manicure1.module.css';
 import { Calendar, Clock, User, Check, ChevronLeft, MapPin, Send, Loader2 } from 'lucide-react';
 import { createPublicAppointment } from '@/app/actions/appointments';
+import { getPublicAvailableSlots } from '@/app/actions/public';
 
 interface BookingFlowProps {
   onBack: () => void;
@@ -55,6 +56,19 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
   const [formData, setFormData] = useState({ name: '', phone: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  useEffect(() => {
+    if (!selectedProf || !selectedService || !selectedDate || !tenantId) return;
+    const dayObj = days.find(d => d.day === selectedDate);
+    if (!dayObj) return;
+    const dateStr = `${dayObj.fullDate.getFullYear()}-${String(dayObj.fullDate.getMonth() + 1).padStart(2, '0')}-${String(dayObj.fullDate.getDate()).padStart(2, '0')}`;
+    setLoadingSlots(true);
+    getPublicAvailableSlots(tenantId, selectedProf.id, selectedService.id, dateStr)
+      .then(res => setAvailableSlots(res.slots || []))
+      .finally(() => setLoadingSlots(false));
+  }, [selectedProf, selectedService, selectedDate, tenantId]);
 
   const nextStep = () => setStep(s => s + 1);
 
@@ -240,13 +254,23 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
           <div className={`${styles.stepBlock} ${styles.stepBlockRevealed}`}>
             <div className={styles.stepInner}>
               <div className={styles.formLabel}><span className={styles.stepNum}>4</span>Escolha o horário</div>
-              <div className={styles.timeGrid}>
-                {['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(t => (
-                  <div key={t} className={`${styles.timeSlot} ${selectedTime === t ? styles.timeSlotSelected : ''}`} onClick={() => handleTimeSelect(t)}>
-                    {t}
-                  </div>
-                ))}
-              </div>
+              {loadingSlots ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '24px' }}>
+                  <Loader2 size={24} className="animate-spin" style={{ color: '#ff6b6b' }} />
+                </div>
+              ) : availableSlots.length === 0 ? (
+                <p style={{ textAlign: 'center', fontSize: '13px', color: '#999', padding: '20px' }}>
+                  Nenhum horário disponível para esta data. Escolha outro dia.
+                </p>
+              ) : (
+                <div className={styles.timeGrid}>
+                  {availableSlots.map(t => (
+                    <div key={t} className={`${styles.timeSlot} ${selectedTime === t ? styles.timeSlotSelected : ''}`} onClick={() => handleTimeSelect(t)}>
+                      {t}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
