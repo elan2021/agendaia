@@ -23,7 +23,7 @@ export async function createWuzapiUser(tenantName: string, wuzapiToken: string) 
     const response = await fetch(`${wuzapiUrl}/admin/users`, {
       method: 'POST',
       headers: {
-        'token': adminToken,
+        'Authorization': adminToken,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -48,9 +48,9 @@ export async function createWuzapiUser(tenantName: string, wuzapiToken: string) 
 
 // Função para garantir que usuários antigos (ou que falharam na criação)
 // sejam criados no WuzAPI sob demanda antes de tentar pegar o QR Code.
-async function ensureWuzapiUser(tenant: any) {
-  if (tenant.instancia && tenant.instancia !== 'default') {
-    return tenant.instancia; // Já tem uma instância/token gerado
+async function ensureWuzapiUser(tenant: any, forceRecreate = false) {
+  if (tenant.instancia && tenant.instancia !== 'default' && !forceRecreate) {
+    return tenant.instancia; // Já tem uma instância/token gerado e não forçamos recriar
   }
 
   // Se não tem, vamos criar agora
@@ -77,13 +77,26 @@ export async function getWuzapiConnectionStatus() {
 
   try {
     const wuzapiUrl = getWuzapiUrl();
-    const response = await fetch(`${wuzapiUrl}/session/status`, {
+    let response = await fetch(`${wuzapiUrl}/session/status`, {
       method: 'GET',
       headers: {
         'token': token
       },
       cache: 'no-store'
     });
+
+    // Auto-healing: recria o usuário se o servidor WuzAPI não reconhecer o token
+    if (response.status === 401) {
+      console.warn("WuzAPI retornou 401. Tentando recriar usuário...");
+      const newToken = await ensureWuzapiUser(tenant, true);
+      if (newToken) {
+        response = await fetch(`${wuzapiUrl}/session/status`, {
+          method: 'GET',
+          headers: { 'token': newToken },
+          cache: 'no-store'
+        });
+      }
+    }
 
     if (!response.ok) {
         return { status: 'disconnected', state: 'unauthenticated' };
@@ -107,13 +120,26 @@ export async function connectWuzapiPhone(phone: string) {
   try {
     const wuzapiUrl = getWuzapiUrl();
     
-    const response = await fetch(`${wuzapiUrl}/session/pair?phone=${phone}`, {
+    let response = await fetch(`${wuzapiUrl}/session/pair?phone=${phone}`, {
       method: 'GET',
       headers: {
         'token': token
       },
       cache: 'no-store'
     });
+
+    // Auto-healing
+    if (response.status === 401) {
+      console.warn("WuzAPI retornou 401 no pair. Tentando recriar usuário...");
+      const newToken = await ensureWuzapiUser(tenant, true);
+      if (newToken) {
+        response = await fetch(`${wuzapiUrl}/session/pair?phone=${phone}`, {
+          method: 'GET',
+          headers: { 'token': newToken },
+          cache: 'no-store'
+        });
+      }
+    }
 
     if (!response.ok) {
         // Se a rota /pair não existir (fork original não tem), tentamos ver se retorna QR no connect
@@ -161,13 +187,26 @@ export async function getWuzapiQR() {
 
   try {
     const wuzapiUrl = getWuzapiUrl();
-    const response = await fetch(`${wuzapiUrl}/session/qr`, {
+    let response = await fetch(`${wuzapiUrl}/session/qr`, {
       method: 'GET',
       headers: {
         'token': token
       },
       cache: 'no-store'
     });
+
+    // Auto-healing
+    if (response.status === 401) {
+      console.warn("WuzAPI retornou 401 no QR. Tentando recriar usuário...");
+      const newToken = await ensureWuzapiUser(tenant, true);
+      if (newToken) {
+        response = await fetch(`${wuzapiUrl}/session/qr`, {
+          method: 'GET',
+          headers: { 'token': newToken },
+          cache: 'no-store'
+        });
+      }
+    }
 
     if (!response.ok) {
       // Tentar ler se mandaram alguma msg de erro da api
