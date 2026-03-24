@@ -95,15 +95,21 @@ const BookingFlow: React.FC<BookingFlowProps> = ({ onBack, onSuccess, services, 
         if (!dayObj) throw new Error("Data inválida");
 
         const [hours, minutes] = selectedTime.split(':').map(Number);
-        const finalDate = new Date(dayObj.fullDate);
-        finalDate.setHours(hours, minutes, 0, 0);
+        const d = dayObj.fullDate;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hh = String(hours).padStart(2, '0');
+        const mm = String(minutes).padStart(2, '0');
+        // ISO string com offset explícito de Brasília para evitar conversão UTC errônea
+        const inicioISO = `${year}-${month}-${day}T${hh}:${mm}:00-03:00`;
 
         const res = await createPublicAppointment(tenantId, {
           cliente_nome: formData.name,
           cliente_tel: formData.phone.replace(/\D/g, ''), // Limpa formatação do telefone
           servico_id: selectedService.id,
           profissional_id: selectedProf.id,
-          inicio: finalDate.toISOString(),
+          inicio: inicioISO,
           status: 'pendente', // Inicia como pendente via página pública
         });
 
