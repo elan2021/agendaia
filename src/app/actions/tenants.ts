@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import crypto from 'crypto';
+import { createWuzapiUser } from './wuzapi';
 
 export async function createTenant(formData: FormData) {
   const nome = formData.get('nome') as string;
@@ -42,11 +43,26 @@ export async function createTenant(formData: FormData) {
         whatsapp_numero,
         instancia,
         nicho: 'beleza', // Default for now
-        turso_db_url: '', // Placeholder
         turso_db_token: '', // Placeholder
         api_key: crypto.randomUUID(),
       }
     });
+
+    // Tentar criar instancia no WuzAPI
+    try {
+      // Usa tenant.slug como identifier e api_key como token
+      await createWuzapiUser(tenant.slug, tenant.api_key);
+
+      // Atualiza o tenant com o token do WuzAPI
+      await (prisma as any).tenant.update({
+        where: { id: tenant.id },
+        data: { instancia: tenant.api_key }
+      });
+      // Atualiza o objeto para o retorno
+      tenant.instancia = tenant.api_key;
+    } catch (e) {
+      console.error("Falha ao integrar com WuzAPI (instância não criada):", e);
+    }
 
     revalidatePath('/admin'); // If there's an admin list
     

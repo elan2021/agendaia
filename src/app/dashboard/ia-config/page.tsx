@@ -12,9 +12,14 @@ import {
   RefreshCw,
   Eye,
   CheckCircle2,
-  Loader2
+  Loader2,
+  QrCode,
+  Smartphone,
+  Link2,
+  Unlink
 } from 'lucide-react';
 import { getIAConfig, updateIAConfig } from '@/app/actions/ia-config';
+import { getWuzapiConnectionStatus, getWuzapiQR, connectWuzapiPhone, logoutWuzapi } from '@/app/actions/wuzapi';
 
 export default function IAConfigPage() {
   const [active, setActive] = useState(true);
@@ -22,6 +27,20 @@ export default function IAConfigPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // WuzAPI States
+  const [wuzapiStatus, setWuzapiStatus] = useState<any>(null);
+  const [isLoadingWuzapi, setIsLoadingWuzapi] = useState(true);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [phoneToPair, setPhoneToPair] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const loadWuzapiStatus = async () => {
+    const status = await getWuzapiConnectionStatus();
+    setWuzapiStatus(status);
+    setIsLoadingWuzapi(false);
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -31,6 +50,7 @@ export default function IAConfigPage() {
         setContext(data.ia_persona || "");
       }
       setIsLoading(false);
+      await loadWuzapiStatus();
     }
     loadData();
   }, []);
@@ -55,6 +75,40 @@ export default function IAConfigPage() {
     setActive(newState);
     // Auto-save status change
     await updateIAConfig({ ia_ativo: newState });
+  };
+
+  const handleConnectQR = async () => {
+    setIsConnecting(true);
+    const res = await getWuzapiQR();
+    if (res?.success) {
+      setQrCode(res.qr);
+      setPairingCode(null);
+    } else {
+      alert(res?.error || "Erro ao buscar QR");
+    }
+    setIsConnecting(false);
+  };
+
+  const handleConnectPair = async () => {
+    if (!phoneToPair) return alert("Digite o número do telefone com DDD (apenas números)");
+    setIsConnecting(true);
+    const res = await connectWuzapiPhone(phoneToPair.replace(/\D/g, ''));
+    if (res?.success && res.pairingCode) {
+      setPairingCode(res.pairingCode);
+      setQrCode(null);
+    } else {
+      alert(res?.error || "Erro ao parear por código. A API pode não suportar pareamento.");
+    }
+    setIsConnecting(false);
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm("Tem certeza que deseja desconectar o WhatsApp?")) return;
+    setIsLoadingWuzapi(true);
+    await logoutWuzapi();
+    setQrCode(null);
+    setPairingCode(null);
+    await loadWuzapiStatus();
   };
 
   if (isLoading) {
@@ -194,6 +248,87 @@ export default function IAConfigPage() {
                  </div>
                ))}
              </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-[32px] border border-brand-neutral-100 shadow-sm relative overflow-hidden">
+             
+             <div className="flex items-center gap-3 mb-6">
+                <div className={`p-2 rounded-xl flex items-center justify-center ${wuzapiStatus?.state === 'connected' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                  {wuzapiStatus?.state === 'connected' ? <Link2 size={24} /> : <Unlink size={24} />}
+                </div>
+                <div>
+                   <h3 className="font-black text-brand-navy uppercase tracking-tight">Conexão WhatsApp</h3>
+                   <div className="text-[10px] font-bold uppercase tracking-widest text-brand-neutral-500 mt-0.5">
+                     {isLoadingWuzapi ? 'Verificando...' : 
+                      wuzapiStatus?.state === 'connected' ? 'API Ativa e Conectada' : 'Aguardando Pareamento'}
+                   </div>
+                </div>
+             </div>
+
+             {isLoadingWuzapi ? (
+                <div className="h-32 flex items-center justify-center">
+                  <Loader2 className="animate-spin text-brand-neutral-300" size={32} />
+                </div>
+             ) : wuzapiStatus?.state === 'connected' ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col items-center justify-center text-center gap-2">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-emerald-500 shadow-sm">
+                       <CheckCircle2 size={24} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-emerald-700">Seu WhatsApp está pareado!</p>
+                      <p className="text-xs text-emerald-600/80 font-medium">A IA já está recebendo as mensagens.</p>
+                    </div>
+                  </div>
+                  <button onClick={handleDisconnect} className="w-full py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                    <Unlink size={16} /> Desconectar
+                  </button>
+                </div>
+             ) : (
+                <div className="space-y-4">
+                  
+                  {qrCode ? (
+                    <div className="flex flex-col items-center gap-4 animate-in zoom-in-95 duration-300">
+                      <div className="p-4 bg-white border-2 border-brand-neutral-100 rounded-2xl shadow-sm">
+                        <img src={qrCode} alt="QR Code" className="w-48 h-48 object-contain" />
+                      </div>
+                      <p className="text-xs text-center text-brand-neutral-500 font-medium">Escaneie o QR Code com<br/>Aparelhos Conectados no WhatsApp</p>
+                      <button onClick={() => setQrCode(null)} className="text-[10px] font-bold text-brand-coral uppercase tracking-widest">Voltar</button>
+                    </div>
+                  ) : pairingCode ? (
+                    <div className="flex flex-col items-center gap-4 animate-in zoom-in-95 duration-300">
+                       <p className="text-xs text-center text-brand-neutral-500 font-medium">Insira este código no seu WhatsApp:</p>
+                       <div className="text-3xl font-black text-brand-navy tracking-[0.2em] bg-brand-neutral-50 px-6 py-4 rounded-2xl border border-brand-neutral-200">
+                         {pairingCode}
+                       </div>
+                       <button onClick={() => setPairingCode(null)} className="text-[10px] font-bold text-brand-coral uppercase tracking-widest">Voltar</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="p-4 bg-brand-neutral-50 rounded-2xl border border-brand-neutral-100 space-y-3">
+                         <label className="text-[10px] font-black uppercase tracking-widest text-brand-neutral-500">Pareamento por Código (Novo)</label>
+                         <div className="flex gap-2">
+                            <input type="text" placeholder="DDD + Número" value={phoneToPair} onChange={e => setPhoneToPair(e.target.value)} className="w-[180px] px-3 text-sm font-bold bg-white border border-brand-neutral-200 rounded-xl outline-none focus:border-brand-navy" />
+                            <button disabled={isConnecting} onClick={handleConnectPair} className="flex-1 bg-brand-navy hover:bg-brand-navy/90 text-white flex items-center justify-center p-3 rounded-xl disabled:opacity-50 transition-colors">
+                              {isConnecting ? <Loader2 size={18} className="animate-spin" /> : 'Avançar'}
+                            </button>
+                         </div>
+                      </div>
+                      
+                      <div className="relative flex items-center justify-center py-2">
+                        <div className="absolute w-full h-[1px] bg-brand-neutral-100"></div>
+                        <span className="relative bg-white px-2 text-[10px] text-brand-neutral-400 font-black tracking-widest uppercase">Ou</span>
+                      </div>
+
+                      <button disabled={isConnecting} onClick={handleConnectQR} className="w-full py-3 bg-brand-neutral-50 hover:bg-brand-neutral-100 border border-brand-neutral-200 text-brand-navy rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                         {isConnecting ? <Loader2 size={16} className="animate-spin" /> : <QrCode size={16} />}
+                         Exibir QR Code
+                      </button>
+                    </>
+                  )}
+                  
+                </div>
+             )}
           </div>
 
           <div className="bg-white p-8 rounded-[32px] border border-brand-neutral-100 shadow-sm space-y-8">
