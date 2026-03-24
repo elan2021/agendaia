@@ -147,8 +147,8 @@ export async function getAvailableSlots(profissional_id: string, dateStr: string
   if (!daySched || !daySched.ativo) return [];
 
   const slots = [];
-  const currentTime = new Date(`${dateStr}T${daySched.inicio}:00`);
-  const endTime = new Date(`${dateStr}T${daySched.fim}:00`);
+  const currentTime = new Date(`${dateStr}T${daySched.inicio}:00-03:00`);
+  const endTime = new Date(`${dateStr}T${daySched.fim}:00-03:00`);
 
   while (currentTime < endTime) {
     const slotEnd = new Date(currentTime.getTime() + servico.duracao_min * 60000);
@@ -158,12 +158,12 @@ export async function getAvailableSlots(profissional_id: string, dateStr: string
 
     // Check lunch break
     if (daySched.almoco_inicio && daySched.almoco_fim) {
-      const almocoStart = new Date(`${dateStr}T${daySched.almoco_inicio}:00`);
-      const almocoEnd = new Date(`${dateStr}T${daySched.almoco_fim}:00`);
+      const almocoStart = new Date(`${dateStr}T${daySched.almoco_inicio}:00-03:00`);
+      const almocoEnd = new Date(`${dateStr}T${daySched.almoco_fim}:00-03:00`);
       
       // If slot overlaps with lunch
       if (currentTime < almocoEnd && slotEnd > almocoStart) {
-        currentTime.setMinutes(currentTime.getMinutes() + 15); // Advance 15 min and try again
+        currentTime.setMinutes(currentTime.getMinutes() + 15);
         continue;
       }
     }
@@ -176,10 +176,10 @@ export async function getAvailableSlots(profissional_id: string, dateStr: string
     });
 
     if (!hasConflict) {
-      slots.push(currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+      slots.push(currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }));
     }
 
-    currentTime.setMinutes(currentTime.getMinutes() + 15); // 15 min granularity for slots
+    currentTime.setMinutes(currentTime.getMinutes() + 15);
   }
 
   return slots;
