@@ -119,8 +119,8 @@ export async function getAvailableSlots(profissional_id: string, dateStr: string
       where: {
         profissional_id,
         inicio: {
-          gte: new Date(`${dateStr}T00:00:00`),
-          lte: new Date(`${dateStr}T23:59:59`),
+          gte: new Date(`${dateStr}T00:00:00-03:00`),
+          lte: new Date(`${dateStr}T23:59:59-03:00`),
         },
         status: { not: 'cancelado' }
       }
@@ -212,8 +212,9 @@ export async function getAppointments(date?: string) {
   if (!tPrisma) return [];
 
   if (date) {
-    const start = new Date(date + 'T00:00:00');
-    const end = new Date(date + 'T23:59:59');
+    // Para um servidor UTC, o dia em Brasília (UTC-3) começa às 03:00 UTC do dia wall-clock e termina às 02:59 UTC do dia seguinte.
+    const start = new Date(`${date}T00:00:00-03:00`);
+    const end = new Date(`${date}T23:59:59-03:00`);
 
     return await (tPrisma as any).agendamento.findMany({
       where: {

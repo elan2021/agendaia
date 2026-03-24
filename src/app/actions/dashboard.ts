@@ -22,23 +22,14 @@ export async function getDashboardStats() {
   // Use the tenant-specific prisma client
   const tPrisma = await getTenantPrisma(tenant.turso_db_url, tenant.turso_db_token);
 
-  // Helper to get Brasilia Date
-  const getBRDate = (d: Date) => new Date(d.getTime() - 3 * 3600000);
-
   const now = new Date();
-  const nowBR = getBRDate(now);
-  
+
   // Today range in UTC for the query
-  // Zero hours in BR today
-  const brTodayStart = new Date(nowBR.getFullYear(), nowBR.getMonth(), nowBR.getDate(), 0, 0, 0);
-  const brTodayEnd = new Date(nowBR.getFullYear(), nowBR.getMonth(), nowBR.getDate(), 23, 59, 59);
+  const todayStartUTC = new Date(`${now.toISOString().split('T')[0]}T00:00:00-03:00`);
+  const todayEndUTC = new Date(`${now.toISOString().split('T')[0]}T23:59:59-03:00`);
   
-  // Convert back to UTC for Prisma
-  const todayStartUTC = new Date(brTodayStart.getTime() + 3 * 3600000).toISOString();
-  const todayEndUTC = new Date(brTodayEnd.getTime() + 3 * 3600000).toISOString();
-  
-  const monthStartBR = new Date(nowBR.getFullYear(), nowBR.getMonth(), 1, 0, 0, 0);
-  const monthStartUTC = new Date(monthStartBR.getTime() + 3 * 3600000).toISOString();
+  const monthStartISO = `${now.toISOString().split('T')[0].substring(0, 7)}-01T00:00:00-03:00`;
+  const monthStartUTC = new Date(monthStartISO);
 
   try {
     const [
