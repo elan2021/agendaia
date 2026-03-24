@@ -2,6 +2,7 @@
 
 import { getCurrentTenant } from './tenants';
 import { getTenantPrisma } from '@/lib/prisma';
+import { revalidatePath } from 'next/cache';
 
 export async function getDashboardStats() {
   const tenant = await getCurrentTenant();
@@ -78,11 +79,16 @@ export async function getDashboardStats() {
     // Calculate Revenue
     const monthlyRevenue = allAgendamentos.reduce((sum: number, a: any) => sum + (a.servico?.preco || 0), 0);
 
-    const monthNames = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
 
     const formattedNext = nextAppointmentsRaw.map((a: any) => {
-      const date = new Date(a.inicio);
+      // Garantir que agendamentos do banco sejam lidos como UTC se vierem como string
+      const rawDate = a.inicio;
+      const date = typeof rawDate === 'string' && !rawDate.includes('Z') && !rawDate.includes('-') 
+        ? new Date(rawDate + 'Z') 
+        : new Date(rawDate);
       
+      console.log(`[DEBUG] appt: ${a.id}, raw: ${rawDate}, interpreted: ${date.toISOString()}`);
+
       const hora_display = new Intl.DateTimeFormat('pt-BR', {
         hour: '2-digit',
         minute: '2-digit',
@@ -105,6 +111,8 @@ export async function getDashboardStats() {
         data_display: `${day} DE ${month}.`
       };
     });
+
+    revalidatePath('/dashboard');
 
     return {
       totalAppointments,
