@@ -90,17 +90,27 @@ export async function getDashboardStats() {
     const monthNames = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
 
     const formattedNext = nextAppointmentsRaw.map((a: any) => {
-      const d = new Date(a.inicio);
-      const br = getBRDate(d);
+      const date = new Date(a.inicio);
       
-      const day = br.getUTCDate().toString().padStart(2, '0');
-      const month = monthNames[br.getUTCMonth()];
-      const hours = br.getUTCHours().toString().padStart(2, '0');
-      const mins = br.getUTCMinutes().toString().padStart(2, '0');
+      const hora_display = new Intl.DateTimeFormat('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Sao_Paulo'
+      }).format(date);
+
+      const day = new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        timeZone: 'America/Sao_Paulo'
+      }).format(date);
+
+      const month = new Intl.DateTimeFormat('pt-BR', {
+        month: 'short',
+        timeZone: 'America/Sao_Paulo'
+      }).format(date).toUpperCase().replace('.', '');
 
       return {
         ...a,
-        hora_display: `${hours}:${mins}`,
+        hora_display,
         data_display: `${day} DE ${month}.`
       };
     });
