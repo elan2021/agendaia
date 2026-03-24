@@ -39,23 +39,48 @@ export async function createWuzapiUser(tenantName: string, wuzapiToken: string) 
       return { error: `Erro da API do WhatsApp: ${response.statusText}` };
     }
 
-    return { success: true };
+    return { success: true, token: wuzapiToken };
   } catch (error: any) {
     console.error("Erro interno ao criar WuzAPI user:", error);
     return { error: error.message || 'Erro desconhecido' };
   }
 }
 
+// Função para garantir que usuários antigos (ou que falharam na criação)
+// sejam criados no WuzAPI sob demanda antes de tentar pegar o QR Code.
+async function ensureWuzapiUser(tenant: any) {
+  if (tenant.instancia && tenant.instancia !== 'default') {
+    return tenant.instancia; // Já tem uma instância/token gerado
+  }
+
+  // Se não tem, vamos criar agora
+  const res = await createWuzapiUser(tenant.slug, tenant.api_key);
+  if (res.success) {
+    // Salva no banco
+    const { prisma } = await import('@/lib/prisma');
+    await (prisma as any).tenant.update({
+      where: { id: tenant.id },
+      data: { instancia: tenant.api_key }
+    });
+    return tenant.api_key;
+  }
+  return null;
+}
+
 export async function getWuzapiConnectionStatus() {
-  const tenant = await getCurrentTenant();
-  if (!tenant || !tenant.instancia) return { error: 'Não autorizado ou sem token de instância' };
+  let tenant = await getCurrentTenant();
+  if (!tenant) return { error: 'Não autorizado' };
+
+  // Garante que o usuário existe no WuzAPI, ou tenta criar se não existir
+  const token = await ensureWuzapiUser(tenant);
+  if (!token) return { error: 'Falha ao recuperar token da instância' };
 
   try {
     const wuzapiUrl = getWuzapiUrl();
     const response = await fetch(`${wuzapiUrl}/session/status`, {
       method: 'GET',
       headers: {
-        'token': tenant.instancia
+        'token': token
       },
       cache: 'no-store'
     });
@@ -73,17 +98,19 @@ export async function getWuzapiConnectionStatus() {
 }
 
 export async function connectWuzapiPhone(phone: string) {
-  const tenant = await getCurrentTenant();
-  if (!tenant || !tenant.instancia) return { error: 'Não autorizado' };
+  let tenant = await getCurrentTenant();
+  if (!tenant) return { error: 'Não autorizado' };
+
+  const token = await ensureWuzapiUser(tenant);
+  if (!token) return { error: 'Falha ao inicializar integração de IA.' };
 
   try {
     const wuzapiUrl = getWuzapiUrl();
     
-    // Tenta usar o endpoint com param de telefone que os forks do WuzAPI usam para pareamento via código
     const response = await fetch(`${wuzapiUrl}/session/pair?phone=${phone}`, {
       method: 'GET',
       headers: {
-        'token': tenant.instancia
+        'token': token
       },
       cache: 'no-store'
     });
@@ -126,27 +153,33 @@ export async function logoutWuzapi() {
 }
 
 export async function getWuzapiQR() {
-  const tenant = await getCurrentTenant();
-  if (!tenant || !tenant.instancia) return { error: 'Não autorizado' };
+  let tenant = await getCurrentTenant();
+  if (!tenant) return { error: 'Não autorizado' };
+
+  const token = await ensureWuzapiUser(tenant);
+  if (!token) return { error: 'Falha ao inicializar integração de IA.' };
 
   try {
     const wuzapiUrl = getWuzapiUrl();
     const response = await fetch(`${wuzapiUrl}/session/qr`, {
       method: 'GET',
       headers: {
-        'token': tenant.instancia
+        'token': token
       },
       cache: 'no-store'
     });
 
     if (!response.ok) {
-      return { error: 'Falha ao buscar QR Code' };
+      // Tentar ler se mandaram alguma msg de erro da api
+      let errApi = "";
+      try { const errObj = await response.json(); errApi = errObj.error || errObj.message; } catch(e){}
+      return { error: `Falha ao buscar QR Code. Verifique se o WuzAPI está no ar. Detalhes: ${errApi}` };
     }
 
     const data = await response.json();
     return { success: true, qr: data.qr_code || data.code || data.qrmessage || data };
   } catch (error: any) {
     console.error("Erro ao buscar QR:", error);
-    return { error: error.message };
+    return { error: `Erro no servidor: ${error.message}` };
   }
 }
