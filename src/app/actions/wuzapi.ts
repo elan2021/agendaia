@@ -54,15 +54,15 @@ async function ensureWuzapiUser(tenant: any, forceRecreate = false) {
   }
 
   // Se não tem, vamos criar agora
-  const res = await createWuzapiUser(tenant.slug, tenant.api_key);
+  const res = await createWuzapiUser(tenant.slug, tenant.slug);
   if (res.success) {
     // Salva no banco
     const { prisma } = await import('@/lib/prisma');
     await (prisma as any).tenant.update({
       where: { id: tenant.id },
-      data: { instancia: tenant.api_key }
+      data: { instancia: tenant.slug }
     });
-    return tenant.api_key;
+    return tenant.slug;
   }
   return null;
 }
@@ -230,16 +230,16 @@ export async function getWuzapiQR() {
     if (response.status === 401) {
       console.warn("WuzAPI retornou 401 no QR. Tentando recriar usuário...");
       try {
-        const resCreate = await createWuzapiUser(tenant.slug, tenant.api_key);
+        const resCreate = await createWuzapiUser(tenant.slug, tenant.slug);
         if (resCreate.success) {
            const { prisma } = await import('@/lib/prisma');
-           await (prisma as any).tenant.update({ where: { id: tenant.id }, data: { instancia: tenant.api_key } });
+           await (prisma as any).tenant.update({ where: { id: tenant.id }, data: { instancia: tenant.slug } });
            
-           await initWuzapiSession(tenant.api_key);
+           await initWuzapiSession(tenant.slug);
            
            response = await fetch(`${wuzapiUrl}/session/qr`, {
              method: 'GET',
-             headers: { 'token': tenant.api_key },
+             headers: { 'token': tenant.slug },
              cache: 'no-store'
            });
         } else {

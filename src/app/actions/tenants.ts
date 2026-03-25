@@ -50,16 +50,16 @@ export async function createTenant(formData: FormData) {
 
     // Tentar criar instancia no WuzAPI
     try {
-      // Usa tenant.slug como identifier e api_key como token
-      await createWuzapiUser(tenant.slug, tenant.api_key);
+      // Usa tenant.slug como nome e também como token da instância
+      await createWuzapiUser(tenant.slug, tenant.slug);
 
-      // Atualiza o tenant com o token do WuzAPI
+      // Atualiza o tenant com o token do WuzAPI, que passa a ser o slug
       await (prisma as any).tenant.update({
         where: { id: tenant.id },
-        data: { instancia: tenant.api_key }
+        data: { instancia: tenant.slug }
       });
       // Atualiza o objeto para o retorno
-      tenant.instancia = tenant.api_key;
+      tenant.instancia = tenant.slug;
     } catch (e) {
       console.error("Falha ao integrar com WuzAPI (instância não criada):", e);
     }
