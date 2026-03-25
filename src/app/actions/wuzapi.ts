@@ -77,6 +77,7 @@ async function initWuzapiSession(token: string) {
         'token': token,
         'Content-Type': 'application/json'
       },
+      cache: 'no-store', // CRÍTICO: Previne o Next.js 14 de cachear esse POST e fingir que chamou
       // Immediate: true fala pro wuzapi responder o HTTP 200 na hora e continuar background
       body: JSON.stringify({ Subscribe: ["Message"], Immediate: true })
     });
@@ -269,7 +270,8 @@ export async function getWuzapiQR() {
     }
 
     let data = await response.json();
-    let qrValue = data.qr_code || data.code || data.qrmessage || data.QRCode || data.qr;
+    let qrValue = data?.data?.qr_code || data?.data?.QRCode || data?.data?.qr || data?.qr_code || data?.QRCode || data?.qr;
+    if (qrValue === "") qrValue = null; // Garante falsy se vazio
     
     if (!qrValue) {
       console.warn("QR code retornou vazio no JSON... Esperando mais dados do WuzAPI e retentando.");
@@ -281,7 +283,8 @@ export async function getWuzapiQR() {
       });
       if (response.ok) {
         data = await response.json();
-        qrValue = data.qr_code || data.code || data.qrmessage || data.QRCode || data.qr;
+        qrValue = data?.data?.qr_code || data?.data?.QRCode || data?.data?.qr || data?.qr_code || data?.QRCode || data?.qr;
+        if (qrValue === "") qrValue = null;
       }
     }
 
