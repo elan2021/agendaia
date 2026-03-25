@@ -79,6 +79,10 @@ export async function GET(request: Request) {
         instancia: true,
         ativo: true,
         api_key: true,
+        endereco: true,
+        bairro: true,
+        cidade: true,
+        horario_funcionamento: true,
         criado_em: true
       }
     });
