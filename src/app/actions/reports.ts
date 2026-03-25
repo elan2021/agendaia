@@ -1,11 +1,12 @@
 "use server";
 
 import { getCurrentTenant } from './tenants';
-import { getTenantPrisma } from '@/lib/prisma';
+import { getTenantPrisma, prisma } from '@/lib/prisma';
 
 async function getPrisma() {
   const tenant = await getCurrentTenant();
-  if (!tenant || !tenant.turso_db_url) return null;
+  if (!tenant) return null;
+  if (!tenant.turso_db_url) return prisma;
   return await getTenantPrisma(tenant.turso_db_url, tenant.turso_db_token);
 }
 

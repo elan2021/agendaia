@@ -17,18 +17,19 @@ const AppointmentSchema = z.object({
 
 async function getPrisma() {
   const tenant = await getCurrentTenant();
-  if (!tenant || !tenant.turso_db_url) return null;
+  if (!tenant) return null;
+  if (!tenant.turso_db_url) return prisma;
   return await getTenantPrisma(tenant.turso_db_url, tenant.turso_db_token);
 }
 
 export async function createPublicAppointment(tenantId: string, data: z.infer<typeof AppointmentSchema>) {
   // Get tenant info from global DB to get Turso credentials
   const tenant = await (prisma as any).tenant.findUnique({ where: { id: tenantId } });
-  if (!tenant || !tenant.turso_db_url) {
-    return { error: 'Empresa não encontrada ou não configurada.' };
+  if (!tenant) {
+    return { error: 'Empresa não encontrada.' };
   }
 
-  const tPrisma = await getTenantPrisma(tenant.turso_db_url, tenant.turso_db_token);
+  const tPrisma = tenant.turso_db_url ? await getTenantPrisma(tenant.turso_db_url, tenant.turso_db_token) : prisma;
   if (!tPrisma) return { error: 'Falha na conexão com o banco de dados.' };
 
   const v = AppointmentSchema.parse(data);
