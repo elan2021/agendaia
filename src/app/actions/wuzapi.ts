@@ -80,6 +80,11 @@ async function initWuzapiSession(token: string) {
       // Immediate: true fala pro wuzapi responder o HTTP 200 na hora e continuar background
       body: JSON.stringify({ Subscribe: ["Message"], Immediate: true })
     });
+
+    // RACE CONDITION FIX: O WuzAPI retorna 200 pro connect imediatamente, mas inicia a engine
+    // usando Goroutines. Atrasamos a próxima execução (QR ou Status) em 2500ms pra dar tempo
+    // do WhatsApp responder o Wss e popular o QR Code no banco de dados local.
+    await new Promise(resolve => setTimeout(resolve, 2500));
   } catch(e) {
     console.error("Warning: Falha ao chamar /session/connect (Wakeup)", e);
   }
@@ -244,6 +249,18 @@ export async function getWuzapiQR() {
       }
     }
 
+    // Em raras race conditions, o WuzAPI pode demorar para setar a session ou dar o QR code de fato
+    // Se o backend ainda acusar "no session" (geralmente Erro 500) ou devolver QR vazio, retentamos 1 vez
+
+    if (!response.ok && response.status === 500) {
+      await new Promise(r => setTimeout(r, 2000));
+      response = await fetch(`${wuzapiUrl}/session/qr`, {
+        method: 'GET',
+        headers: { 'token': token },
+        cache: 'no-store'
+      });
+    }
+
     if (!response.ok) {
       // Tentar ler se mandaram alguma msg de erro da api
       let errApi = "";
@@ -251,8 +268,28 @@ export async function getWuzapiQR() {
       return { error: `Falha ao buscar QR Code. Verifique se o WuzAPI está no ar. Detalhes: ${errApi}` };
     }
 
-    const data = await response.json();
-    return { success: true, qr: data.qr_code || data.code || data.qrmessage || data };
+    let data = await response.json();
+    let qrValue = data.qr_code || data.code || data.qrmessage || data.QRCode || data.qr;
+    
+    if (!qrValue) {
+      console.warn("QR code retornou vazio no JSON... Esperando mais dados do WuzAPI e retentando.");
+      await new Promise(r => setTimeout(r, 2000));
+      response = await fetch(`${wuzapiUrl}/session/qr`, {
+        method: 'GET',
+        headers: { 'token': token },
+        cache: 'no-store'
+      });
+      if (response.ok) {
+        data = await response.json();
+        qrValue = data.qr_code || data.code || data.qrmessage || data.QRCode || data.qr;
+      }
+    }
+
+    if (!qrValue) {
+      return { error: `A conta do WhatsApp não retornou o QR rápido o suficiente, por favor clique no botão de novo!` };
+    }
+
+    return { success: true, qr: qrValue };
   } catch (error: any) {
     console.error("Erro ao buscar QR:", error);
     return { error: `Erro no servidor: ${error.message}` };
