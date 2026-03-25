@@ -253,14 +253,14 @@ export default function IAConfigPage() {
           <div className="bg-white p-8 rounded-[32px] border border-brand-neutral-100 shadow-sm relative overflow-hidden">
              
              <div className="flex items-center gap-3 mb-6">
-                <div className={`p-2 rounded-xl flex items-center justify-center ${wuzapiStatus?.state === 'connected' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
-                  {wuzapiStatus?.state === 'connected' ? <Link2 size={24} /> : <Unlink size={24} />}
+                <div className={`p-2 rounded-xl flex items-center justify-center ${wuzapiStatus?.data?.connected ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                  {wuzapiStatus?.data?.connected ? <Link2 size={24} /> : <Unlink size={24} />}
                 </div>
                 <div>
                    <h3 className="font-black text-brand-navy uppercase tracking-tight">Conexão WhatsApp</h3>
                    <div className="text-[10px] font-bold uppercase tracking-widest text-brand-neutral-500 mt-0.5">
                      {isLoadingWuzapi ? 'Verificando...' : 
-                      wuzapiStatus?.state === 'connected' ? 'API Ativa e Conectada' : 'Aguardando Pareamento'}
+                      wuzapiStatus?.data?.connected ? 'API Ativa e Conectada' : 'Aguardando Pareamento'}
                    </div>
                 </div>
              </div>
@@ -269,7 +269,7 @@ export default function IAConfigPage() {
                 <div className="h-32 flex items-center justify-center">
                   <Loader2 className="animate-spin text-brand-neutral-300" size={32} />
                 </div>
-             ) : wuzapiStatus?.state === 'connected' ? (
+             ) : (wuzapiStatus?.data?.connected || wuzapiStatus?.data?.loggedIn) ? (
                 <div className="space-y-4">
                   <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col items-center justify-center text-center gap-2">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-emerald-500 shadow-sm">
@@ -277,11 +277,11 @@ export default function IAConfigPage() {
                     </div>
                     <div>
                       <p className="text-sm font-black text-emerald-700">Seu WhatsApp está pareado!</p>
-                      <p className="text-xs text-emerald-600/80 font-medium">A IA já está recebendo as mensagens.</p>
+                      <p className="text-xs text-emerald-600/80 font-medium">A IA já está habilitada para usar seu número.</p>
                     </div>
                   </div>
                   <button onClick={handleDisconnect} className="w-full py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
-                    <Unlink size={16} /> Desconectar
+                    <Unlink size={16} /> Desconectar Celular
                   </button>
                 </div>
              ) : (
