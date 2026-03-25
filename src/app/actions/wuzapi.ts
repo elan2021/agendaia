@@ -67,6 +67,24 @@ async function ensureWuzapiUser(tenant: any, forceRecreate = false) {
   return null;
 }
 
+// Acorda o client manager do WhatsMeow dentro do WuzAPI
+async function initWuzapiSession(token: string) {
+  try {
+    const wuzapiUrl = getWuzapiUrl();
+    await fetch(`${wuzapiUrl}/session/connect`, {
+      method: 'POST',
+      headers: {
+        'token': token,
+        'Content-Type': 'application/json'
+      },
+      // Immediate: true fala pro wuzapi responder o HTTP 200 na hora e continuar background
+      body: JSON.stringify({ Subscribe: ["Message"], Immediate: true })
+    });
+  } catch(e) {
+    console.error("Warning: Falha ao chamar /session/connect (Wakeup)", e);
+  }
+}
+
 export async function getWuzapiConnectionStatus() {
   let tenant = await getCurrentTenant();
   if (!tenant) return { error: 'Não autorizado' };
@@ -117,6 +135,9 @@ export async function connectWuzapiPhone(phone: string) {
   const token = await ensureWuzapiUser(tenant);
   if (!token) return { error: 'Falha ao inicializar integração de IA.' };
 
+  // WuzAPI requires engine to be started before requesting Pair Code
+  await initWuzapiSession(token);
+
   try {
     const wuzapiUrl = getWuzapiUrl();
     
@@ -133,6 +154,7 @@ export async function connectWuzapiPhone(phone: string) {
       console.warn("WuzAPI retornou 401 no pair. Tentando recriar usuário...");
       const newToken = await ensureWuzapiUser(tenant, true);
       if (newToken) {
+        await initWuzapiSession(newToken);
         response = await fetch(`${wuzapiUrl}/session/pair?phone=${phone}`, {
           method: 'GET',
           headers: { 'token': newToken },
@@ -185,6 +207,9 @@ export async function getWuzapiQR() {
   const token = await ensureWuzapiUser(tenant);
   if (!token) return { error: 'Falha ao inicializar integração de IA.' };
 
+  // WuzAPI requires engine to be started before requesting QR Code
+  await initWuzapiSession(token);
+
   try {
     const wuzapiUrl = getWuzapiUrl();
     let response = await fetch(`${wuzapiUrl}/session/qr`, {
@@ -203,6 +228,8 @@ export async function getWuzapiQR() {
         if (resCreate.success) {
            const { prisma } = await import('@/lib/prisma');
            await (prisma as any).tenant.update({ where: { id: tenant.id }, data: { instancia: tenant.api_key } });
+           
+           await initWuzapiSession(tenant.api_key);
            
            response = await fetch(`${wuzapiUrl}/session/qr`, {
              method: 'GET',
