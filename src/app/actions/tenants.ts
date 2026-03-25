@@ -176,6 +176,9 @@ export async function updateBusinessInfo(data: {
   proprietario_nome?: string;
   whatsapp_numero?: string;
   endereco?: string;
+  bairro?: string;
+  cidade?: string;
+  horario_funcionamento?: string;
   logo_url?: string;
   instagram_url?: string;
   facebook_url?: string;
@@ -191,6 +194,9 @@ export async function updateBusinessInfo(data: {
         proprietario_nome: data.proprietario_nome,
         whatsapp_numero: data.whatsapp_numero,
         endereco: data.endereco,
+        bairro: data.bairro,
+        cidade: data.cidade,
+        horario_funcionamento: data.horario_funcionamento,
         logo_url: data.logo_url,
         instagram_url: data.instagram_url,
         facebook_url: data.facebook_url,

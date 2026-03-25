@@ -25,6 +25,8 @@ model Tenant {
   instancia        String   @default("default")
   template        String   @default("manicure1")
   endereco        String?
+  bairro          String?
+  cidade          String?
   logo_url        String?
   instagram_url   String?
   facebook_url    String?
