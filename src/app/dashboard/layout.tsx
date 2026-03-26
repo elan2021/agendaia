@@ -10,7 +10,7 @@ export default async function DashboardLayout({
 }) {
   const result = await getCurrentSession();
 
-  if (!result) {
+  if (!result || !result.tenant) {
     redirect('/login');
   }
 

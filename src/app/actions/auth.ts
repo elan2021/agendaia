@@ -121,23 +121,28 @@ export async function logout() {
 }
 
 export async function getCurrentSession() {
-  const token = cookies().get('atendimento_session')?.value;
-  if (!token) return null;
+  try {
+    const token = cookies().get('atendimento_session')?.value;
+    if (!token) return null;
 
-  const session = await (prisma as any).session.findUnique({
-    where: { 
-      token,
-      expiresAt: { gte: new Date() }
-    }
-  });
+    const session = await (prisma as any).session.findUnique({
+      where: { 
+        token,
+        expiresAt: { gte: new Date() }
+      }
+    });
 
-  if (!session) return null;
+    if (!session) return null;
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: session.tenantId }
-  });
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: session.tenantId }
+    });
 
-  return { session, tenant };
+    return { session, tenant };
+  } catch (error) {
+    console.error('Erro silencioso obtendo sessao Prisma:', error);
+    return null;
+  }
 }
 
 
