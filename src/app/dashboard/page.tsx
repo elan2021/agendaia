@@ -33,28 +33,28 @@ export default function DashboardPage() {
   const kpis = [
     { 
       label: 'Faturamento Mensal', 
-      value: `R$ ${statsData?.monthlyRevenue.toFixed(2) || '0,00'}`, 
+      value: `R$ ${statsData?.monthlyRevenue?.toFixed(2) || '0,00'}`, 
       icon: DollarSign, 
       color: 'text-emerald-600',
       bg: 'bg-emerald-50'
     },
     { 
       label: 'Clientes Ativos', 
-      value: statsData?.activeClients.toString() || '0', 
+      value: statsData?.activeClients?.toString() || '0', 
       icon: Users, 
       color: 'text-brand-navy',
       bg: 'bg-brand-cream'
     },
     { 
       label: 'Novos este Mês', 
-      value: statsData?.newClientsMonth.toString() || '0', 
+      value: statsData?.newClientsMonth?.toString() || '0', 
       icon: UserCheck, 
       color: 'text-brand-coral',
       bg: 'bg-brand-coral/5'
     },
     { 
       label: 'Agendamentos Hoje', 
-      value: statsData?.todayAppointments.toString() || '0', 
+      value: statsData?.todayAppointments?.toString() || '0', 
       icon: Calendar, 
       color: 'text-indigo-600',
       bg: 'bg-indigo-50'
