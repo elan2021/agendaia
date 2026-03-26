@@ -30,6 +30,27 @@ export default function AdminTenantsPage() {
   const [tursoToken, setTursoToken] = useState('');
   const [instancia, setInstancia] = useState('default');
 
+  // Upgrade Modal State
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradePlan, setUpgradePlan] = useState<'start' | 'pro'>('start');
+
+  async function handleUpgradePlan(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedTenant) return;
+
+    startTransition(async () => {
+      const result = await updateTenant(selectedTenant.id, {
+        plano: upgradePlan
+      });
+
+      if (result.success) {
+        setIsUpgradeModalOpen(false);
+        setSelectedTenant(null);
+        fetchTenants();
+      }
+    });
+  }
+
   useEffect(() => {
     fetchTenants();
   }, []);
@@ -167,95 +188,174 @@ export default function AdminTenantsPage() {
                       {tenant.ativo ? 'Ativo' : 'Pendente'}
                     </span>
                   </td>
-                  <td className="px-8 py-6 text-right">
-                    {!tenant.ativo ? (
-                        <button 
-                            onClick={() => setSelectedTenant(tenant)}
-                            className="px-4 py-2 bg-brand-coral text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md shadow-brand-coral/20 hover:scale-105 transition-all active:scale-95"
-                        >
-                            Configurar & Ativar
-                        </button>
-                    ) : (
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="p-2.5 text-brand-neutral-400 hover:text-brand-navy hover:bg-brand-neutral-50 rounded-xl transition-all"><Eye size={18} /></button>
-                            <button className="p-2.5 text-brand-neutral-400 hover:text-brand-coral hover:bg-brand-neutral-50 rounded-xl transition-all"><ShieldAlert size={18} /></button>
-                        </div>
-                    )}
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                   <td colSpan={6} className="px-8 py-20 text-center">
-                      <p className="text-brand-neutral-400 font-black text-sm uppercase tracking-widest">Nenhum estabelecimento encontrado.</p>
-                   </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    <td className="px-8 py-6 text-right">
+                      {!tenant.ativo ? (
+                          <button 
+                              onClick={() => setSelectedTenant(tenant)}
+                              className="px-4 py-2 bg-brand-coral text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md shadow-brand-coral/20 hover:scale-105 transition-all active:scale-95"
+                          >
+                              Configurar & Ativar
+                          </button>
+                      ) : (
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => {
+                                  setSelectedTenant(tenant);
+                                  setUpgradePlan(tenant.plano === 'pro' ? 'pro' : 'start');
+                                  setIsUpgradeModalOpen(true);
+                                }}
+                                title="Mudar Plano"
+                                className="p-2.5 text-brand-neutral-400 hover:text-white hover:bg-brand-coral rounded-xl transition-all shadow-sm"
+                              >
+                                Mudar Plano
+                              </button>
+                              <button className="p-2.5 text-brand-neutral-400 hover:text-brand-navy hover:bg-brand-neutral-50 rounded-xl transition-all"><Eye size={18} /></button>
+                              <button className="p-2.5 text-brand-neutral-400 hover:text-brand-coral hover:bg-brand-neutral-50 rounded-xl transition-all"><ShieldAlert size={18} /></button>
+                          </div>
+                      )}
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                     <td colSpan={7} className="px-8 py-20 text-center">
+                        <p className="text-brand-neutral-400 font-black text-sm uppercase tracking-widest">Nenhum estabelecimento encontrado.</p>
+                     </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+  
+        {/* Activation Modal */}
+        {selectedTenant && !isUpgradeModalOpen && (
+          <div className="fixed inset-0 bg-brand-navy/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+             <div className="bg-white rounded-[40px] shadow-2xl max-w-lg w-full p-10 relative overflow-hidden animate-in zoom-in-95 duration-300">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-coral/5 rounded-full -mr-16 -mt-16" />
+                
+                <div className="mb-8">
+                  <h3 className="text-2xl font-black text-brand-navy tracking-tight uppercase">Provisionamento Técnico</h3>
+                  <p className="text-brand-neutral-500 text-sm font-medium mt-1">Configurar banco de dados Turso para <span className="text-brand-navy font-black">{selectedTenant.nome}</span></p>
+                </div>
+  
+                <form onSubmit={handleActivate} className="space-y-6">
+                  <div className="space-y-2">
+                      <label className="text-[10px] font-black text-brand-neutral-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                          <Database size={12} className="text-brand-coral" />
+                          Turso Database URL
+                      </label>
+                      <input 
+                          type="text" 
+                          required
+                          placeholder="libsql://your-db.turso.io"
+                          value={tursoUrl}
+                          onChange={(e) => setTursoUrl(e.target.value)}
+                          className="w-full bg-brand-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-brand-navy focus:ring-2 focus:ring-brand-coral/20 transition-all shadow-inner"
+                      />
+                  </div>
+  
+                  <div className="space-y-2">
+                      <label className="text-[10px] font-black text-brand-neutral-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                          <Key size={12} className="text-brand-coral" />
+                          Auth Token
+                      </label>
+                      <input 
+                          type="password" 
+                          required
+                          placeholder="••••••••••••••••"
+                          value={tursoToken}
+                          onChange={(e) => setTursoToken(e.target.value)}
+                          className="w-full bg-brand-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-brand-navy focus:ring-2 focus:ring-brand-coral/20 transition-all shadow-inner"
+                      />
+                  </div>
+  
+                  <div className="space-y-2">
+                      <label className="text-[10px] font-black text-brand-neutral-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                          <Smartphone size={12} className="text-brand-coral" />
+                          Instância WuzAPI
+                      </label>
+                      <input 
+                          type="text" 
+                          required
+                          placeholder="Ex: instancia-id"
+                          value={instancia}
+                          onChange={(e) => setInstancia(e.target.value)}
+                          className="w-full bg-brand-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-brand-navy focus:ring-2 focus:ring-brand-coral/20 transition-all shadow-inner"
+                      />
+                  </div>
+  
+                  <div className="flex gap-4 pt-4">
+                      <button 
+                          type="button"
+                          onClick={() => setSelectedTenant(null)}
+                          className="flex-1 py-4 bg-brand-neutral-50 text-brand-neutral-400 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-neutral-100 transition-all"
+                      >
+                          Cancelar
+                      </button>
+                      <button 
+                          disabled={isPending}
+                          type="submit"
+                          className="flex-1 py-4 bg-brand-navy text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-navy/90 transition-all shadow-xl shadow-brand-navy/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                          {isPending ? <Loader2 size={16} className="animate-spin" /> : 'Ativar Agora'}
+                      </button>
+                  </div>
+                </form>
+             </div>
+          </div>
+        )}
 
-      {/* Activation Modal */}
-      {selectedTenant && (
+      {/* Upgrade Plano Modal */}
+      {selectedTenant && isUpgradeModalOpen && (
         <div className="fixed inset-0 bg-brand-navy/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
            <div className="bg-white rounded-[40px] shadow-2xl max-w-lg w-full p-10 relative overflow-hidden animate-in zoom-in-95 duration-300">
               <div className="absolute top-0 right-0 w-32 h-32 bg-brand-coral/5 rounded-full -mr-16 -mt-16" />
               
               <div className="mb-8">
-                <h3 className="text-2xl font-black text-brand-navy tracking-tight uppercase">Provisionamento Técnico</h3>
-                <p className="text-brand-neutral-500 text-sm font-medium mt-1">Configurar banco de dados Turso para <span className="text-brand-navy font-black">{selectedTenant.nome}</span></p>
+                <h3 className="text-2xl font-black text-brand-navy tracking-tight uppercase">Mudar Plano</h3>
+                <p className="text-brand-neutral-500 text-sm font-medium mt-1">Alterando plano da empresa <span className="text-brand-navy font-black">{selectedTenant.nome}</span></p>
               </div>
 
-              <form onSubmit={handleActivate} className="space-y-6">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-brand-neutral-400 uppercase tracking-widest flex items-center gap-2 px-1">
-                        <Database size={12} className="text-brand-coral" />
-                        Turso Database URL
-                    </label>
+              <form onSubmit={handleUpgradePlan} className="space-y-6">
+                <div className="space-y-4">
+                  <label className="flex items-center gap-4 p-4 border rounded-2xl cursor-pointer hover:border-brand-navy transition-all">
                     <input 
-                        type="text" 
-                        required
-                        placeholder="libsql://your-db.turso.io"
-                        value={tursoUrl}
-                        onChange={(e) => setTursoUrl(e.target.value)}
-                        className="w-full bg-brand-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-brand-navy focus:ring-2 focus:ring-brand-coral/20 transition-all shadow-inner"
+                      type="radio" 
+                      name="planoOption"
+                      value="start"
+                      checked={upgradePlan === 'start'}
+                      onChange={(e) => setUpgradePlan(e.target.value as 'start' | 'pro')}
+                      className="w-5 h-5 text-brand-navy"
                     />
-                </div>
+                    <div>
+                      <h4 className="font-black text-brand-navy">Start</h4>
+                      <p className="text-xs text-brand-neutral-500 font-bold">Confirmações automáticas via n8n (agendamento_link)</p>
+                    </div>
+                  </label>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-brand-neutral-400 uppercase tracking-widest flex items-center gap-2 px-1">
-                        <Key size={12} className="text-brand-coral" />
-                        Auth Token
-                    </label>
+                  <label className="flex items-center gap-4 p-4 border rounded-2xl cursor-pointer hover:border-brand-coral transition-all">
                     <input 
-                        type="password" 
-                        required
-                        placeholder="••••••••••••••••"
-                        value={tursoToken}
-                        onChange={(e) => setTursoToken(e.target.value)}
-                        className="w-full bg-brand-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-brand-navy focus:ring-2 focus:ring-brand-coral/20 transition-all shadow-inner"
+                      type="radio" 
+                      name="planoOption"
+                      value="pro"
+                      checked={upgradePlan === 'pro'}
+                      onChange={(e) => setUpgradePlan(e.target.value as 'start' | 'pro')}
+                      className="w-5 h-5 text-brand-coral"
                     />
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-brand-neutral-400 uppercase tracking-widest flex items-center gap-2 px-1">
-                        <Smartphone size={12} className="text-brand-coral" />
-                        Instância WuzAPI
-                    </label>
-                    <input 
-                        type="text" 
-                        required
-                        placeholder="Ex: instancia-id"
-                        value={instancia}
-                        onChange={(e) => setInstancia(e.target.value)}
-                        className="w-full bg-brand-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-brand-navy focus:ring-2 focus:ring-brand-coral/20 transition-all shadow-inner"
-                    />
+                    <div>
+                      <h4 className="font-black text-brand-coral">Pró</h4>
+                      <p className="text-xs text-brand-neutral-500 font-bold">Agendamento autônomo total (agendamento_automatico)</p>
+                    </div>
+                  </label>
                 </div>
 
                 <div className="flex gap-4 pt-4">
                     <button 
                         type="button"
-                        onClick={() => setSelectedTenant(null)}
+                        onClick={() => {
+                          setSelectedTenant(null);
+                          setIsUpgradeModalOpen(false);
+                        }}
                         className="flex-1 py-4 bg-brand-neutral-50 text-brand-neutral-400 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-neutral-100 transition-all"
                     >
                         Cancelar
@@ -265,16 +365,16 @@ export default function AdminTenantsPage() {
                         type="submit"
                         className="flex-1 py-4 bg-brand-navy text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-navy/90 transition-all shadow-xl shadow-brand-navy/20 disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                        {isPending ? <Loader2 size={16} className="animate-spin" /> : 'Ativar Agora'}
+                        {isPending ? <Loader2 size={16} className="animate-spin" /> : 'Confirmar Mudança'}
                     </button>
                 </div>
               </form>
            </div>
         </div>
       )}
-    </div>
-  );
-}
+      </div>
+    );
+  }
 
 function Loader2({ size, className }: { size: number, className?: string }) {
     return <Clock size={size} className={className} />;

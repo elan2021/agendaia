@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import crypto from 'crypto';
-import { createWuzapiUser } from './wuzapi';
+import { createWuzapiUser, setupWuzapiWebhook } from './wuzapi';
 
 export async function createTenant(formData: FormData) {
   const nome = formData.get('nome') as string;
@@ -11,6 +11,7 @@ export async function createTenant(formData: FormData) {
   const proprietario_nome = formData.get('proprietario_nome') as string;
   const whatsapp_numero = formData.get('whatsapp_numero') as string;
   const instancia = formData.get('instancia') as string || 'default';
+  const plano = formData.get('plano') as string || 'starter';
 
   if (!nome || !slug || !whatsapp_numero) {
     return { error: 'Campos obrigatórios faltando.' };
@@ -42,6 +43,7 @@ export async function createTenant(formData: FormData) {
         proprietario_nome,
         whatsapp_numero,
         instancia,
+        plano,
         nicho: 'beleza', // Default for now
         turso_db_token: '', // Placeholder
         api_key: crypto.randomUUID(),
@@ -60,6 +62,9 @@ export async function createTenant(formData: FormData) {
       });
       // Atualiza o objeto para o retorno
       tenant.instancia = tenant.slug;
+
+      // Configurar o Webhook N8N correspondente ao plano (Start ou Pró)
+      await setupWuzapiWebhook(tenant.slug, plano);
     } catch (e) {
       console.error("Falha ao integrar com WuzAPI (instância não criada):", e);
     }
@@ -108,6 +113,12 @@ export async function updateTenant(id: string, data: any) {
       where: { id },
       data
     });
+    
+    // Se o plano foi atualizado, reafirmamos o webhook correspondente
+    if (data.plano && tenant.instancia !== 'default') {
+      await setupWuzapiWebhook(tenant.instancia, data.plano);
+    }
+    
     revalidatePath('/admin/tenants');
     return { success: true, tenant };
   } catch (error) {

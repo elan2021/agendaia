@@ -46,6 +46,38 @@ export async function createWuzapiUser(tenantName: string, wuzapiToken: string) 
   }
 }
 
+export async function setupWuzapiWebhook(tenantToken: string, plano: string) {
+  try {
+    const wuzapiUrl = getWuzapiUrl();
+    
+    // Logica de URLs por plano conforme solicitado
+    const isPro = plano === 'pro' || plano === 'pró';
+    const webhookUrl = isPro 
+      ? 'https://automacoes-n8n.npsqp7.easypanel.host/webhook-test/agendamento_automatico'
+      : 'https://automacoes-n8n.npsqp7.easypanel.host/webhook-test/agendamento_link';
+
+    const response = await fetch(`${wuzapiUrl}/webhook`, {
+      method: 'POST',
+      headers: {
+        'token': tenantToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        WebhookURL: webhookUrl,
+        Subscribe: ["Message"]
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`[WuzAPI] Falha ao configurar Webhook para token ${tenantToken}:`, await response.text());
+    } else {
+      console.log(`[WuzAPI] Webhook (${plano}) configurado com sucesso: ${webhookUrl}`);
+    }
+  } catch (error) {
+    console.error("[WuzAPI] Erro de rede ao configurar Webhook:", error);
+  }
+}
+
 // Função para garantir que usuários antigos (ou que falharam na criação)
 // sejam criados no WuzAPI sob demanda antes de tentar pegar o QR Code.
 async function ensureWuzapiUser(tenant: any, forceRecreate = false) {
