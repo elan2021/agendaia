@@ -114,7 +114,11 @@ export async function verifyOTP(whatsapp: string, code: string) {
 export async function logout() {
   const token = cookies().get('atendimento_session')?.value;
   if (token) {
-    await (prisma as any).session.deleteMany({ where: { token } });
+    try {
+      await (prisma as any).session.deleteMany({ where: { token } });
+    } catch (e) {
+      console.error('Ignorando erro de DB no logout', e);
+    }
     cookies().delete('atendimento_session');
   }
   redirect('/login');
