@@ -53,8 +53,8 @@ export async function setupWuzapiWebhook(tenantToken: string, plano: string) {
     // Logica de URLs por plano conforme solicitado
     const isPro = plano === 'pro' || plano === 'pró';
     const webhookUrl = isPro 
-      ? 'https://automacoes-n8n.npsqp7.easypanel.host/webhook-test/agendamento_automatico'
-      : 'https://automacoes-n8n.npsqp7.easypanel.host/webhook-test/agendamento_link';
+      ? 'http://n8n:5678/webhook-test/agendamento_automatico'
+      : 'http://n8n:5678/webhook-test/agendamento_link';
 
     const response = await fetch(`${wuzapiUrl}/webhook`, {
       method: 'POST',
